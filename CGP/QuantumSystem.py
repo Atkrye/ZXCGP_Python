@@ -35,6 +35,7 @@ class QSystem:
             self.close_layer()
         self.layer_unfinished = True
 
+    #Closes the current layer. Matrices are tensored together and added to the layers array as a new layer
     def close_layer(self):
         m = CMatrix([[1 + 0j]])
         for i in range(len(self.current_layer)):
@@ -43,6 +44,13 @@ class QSystem:
         self.measure_flags.append(False)
         self.layer_unfinished = False
         self.current_layer = []
+
+    #Closes the current layer, inserting a connection matrix in-front of it to connect qubits from the previous layer to the correct components of this layer
+    def close_layer_with_connection_matrix(self, connection_matrix):
+        #Insert the connection matrix, indicating that it is not a measurement layer
+        self.layers.append(connection_matrix)
+        self.measure_flags.append(False)
+        self.close_layer()
 
     #Adds a matrix operator to the current layer
     def add_operator(self, operator):

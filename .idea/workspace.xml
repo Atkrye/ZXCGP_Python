@@ -40,8 +40,8 @@
       <file leaf-file-name="QuantumSystem.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/CGP/QuantumSystem.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3168">
-              <caret line="144" column="0" lean-forward="true" selection-start-line="144" selection-start-column="0" selection-end-line="144" selection-end-column="0" />
+            <state relative-caret-position="283">
+              <caret line="49" column="84" lean-forward="false" selection-start-line="49" selection-start-column="84" selection-end-line="49" selection-end-column="84" />
               <folding>
                 <element signature="e#0#31#0" expanded="true" />
               </folding>
@@ -74,8 +74,8 @@
       <file leaf-file-name="ZX_CGP.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/CGP/ZX_CGP.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-214">
-              <caret line="272" column="61" lean-forward="true" selection-start-line="272" selection-start-column="61" selection-end-line="272" selection-end-column="61" />
+            <state relative-caret-position="154">
+              <caret line="253" column="48" lean-forward="true" selection-start-line="253" selection-start-column="48" selection-end-line="253" selection-end-column="48" />
               <folding>
                 <element signature="e#0#24#0" expanded="true" />
               </folding>
@@ -96,6 +96,9 @@
     <findStrings>
       <find>randint</find>
       <find>print</find>
+      <find>side</find>
+      <find>outputs</find>
+      <find>l</find>
     </findStrings>
   </component>
   <component name="IdeDocumentHistory">
@@ -103,9 +106,9 @@
       <list>
         <option value="$PROJECT_DIR$/CGP/QuantumState.py" />
         <option value="$PROJECT_DIR$/CGP/CMatrix.py" />
-        <option value="$PROJECT_DIR$/CGP/QuantumSystem.py" />
         <option value="$PROJECT_DIR$/EdgePointer.py" />
         <option value="$PROJECT_DIR$/CGP/ZXNode.py" />
+        <option value="$PROJECT_DIR$/CGP/QuantumSystem.py" />
         <option value="$PROJECT_DIR$/CGP/ZX_CGP.py" />
       </list>
     </option>
@@ -481,16 +484,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/CGP/QuantumSystem.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3168">
-          <caret line="144" column="0" lean-forward="true" selection-start-line="144" selection-start-column="0" selection-end-line="144" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#31#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/CGP/EdgePointer.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -517,10 +510,20 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/CGP/QuantumSystem.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="283">
+          <caret line="49" column="84" lean-forward="false" selection-start-line="49" selection-start-column="84" selection-end-line="49" selection-end-column="84" />
+          <folding>
+            <element signature="e#0#31#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/CGP/ZX_CGP.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-214">
-          <caret line="272" column="61" lean-forward="true" selection-start-line="272" selection-start-column="61" selection-end-line="272" selection-end-column="61" />
+        <state relative-caret-position="154">
+          <caret line="253" column="48" lean-forward="true" selection-start-line="253" selection-start-column="48" selection-end-line="253" selection-end-column="48" />
           <folding>
             <element signature="e#0#24#0" expanded="true" />
           </folding>

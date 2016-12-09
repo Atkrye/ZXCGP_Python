@@ -253,6 +253,9 @@ class ZX_CGP:
 
         #Builds a matrix equivalent of the zx graph expressed in the phenotype
         def generate_qsystem(self):
+            #Ensure we have an up-to-date notion of which nodes are active
+            self.active_pass()
+
             #See QuantumSystem.py for usage
             q = QSystem()
             grid = self.grid
@@ -260,6 +263,7 @@ class ZX_CGP:
             q.new_layer()
             input_layer = self.grid[0]
             unresolved_inputs = []
+            new_unresolved_inputs = []
 
             #Iterate over each input, generating a matrix for it
             for input in range(self.i):
@@ -270,7 +274,7 @@ class ZX_CGP:
 
                 #Find active outputs, add them to unresolved_inputs and increase the count of outputs for this node
                 outputs = 0
-                for output in range(node.get_outputs_side()):
+                for output in range(node.get_outputs_size()):
                     if node.get_output(output) is not None:
                         #An output using a connection has been found. It is now checked to see if its source is active
                         potential_output = node.get_output(output)
@@ -280,10 +284,92 @@ class ZX_CGP:
 
                 #Calculate Matrix for input. Input is always green with phase 0.0 e.g. a wire for 1 output
                 qs.add_operator(node.calculate_matrix(inputs, outputs))
+
+            #Iterate through each hidden layer
             for l in range(self.n + 1):
+                #Reset the new unresolved inputs list
+                new_unresolved_inputs = []
+
+                #List to store which inputs have been matched to which vertical index in the quantum system
+                resolved_inputs = []
+
                 #Close the previous layer and start a new one
                 qs.new_layer()
+
+                #input layer is index 0 so shuffle index one to right
                 layer_index = l + 1
+
+                #Go through each hidden node in this layer
+                for j in range(self.m):
+                    #Get jth corresponding node
+                    node = self.get_node(layer_index, j)
+
+                    #A node is only relevant if its has already been tagged active
+                    if node.get_active():
+                        inputs = 0
+                        outputs = 0
+                        #Try to find some edge connecting to this node by searching over all unresolved edges. It is possible for a node to be active with no active inputs
+                        #This would make the node a generator, but this behaviour is accommodated for and can be seen in ZXNode.py, in the ZXNode class, calculate_matrix() method
+                        #We split the process into matching for individual inputs for the node. The purpose of doing this is to maintain a clear ordering on
+                        #The inputs and outputs.
+                        for e in range(node.get_inputs_size):
+                            for k in range(len(unresolved_inputs)):
+                                #Get kth edge
+                                input = unresolved_inputs[k]
+
+                                #Check if kth edge has coordinates matching this node
+                                if input.get_x() == node.get_x() and input.get_y() == node.get_y() and e == input.get_z():
+                                    #Matching edge. Store the match as a resolved input and increase inputs counter
+                                    resolved_inputs.append(input)
+                                    inputs += 1
+
+                        #Try to find active outputs. Note, since the node is active there should always be at least 1 active output
+                        for k in range(node.get_outputs_size()):
+                            #Get kth output
+                            output = node.get_output(k)
+
+                            #Check if the output is an active connection
+                            if output is not None and self.get_node(output.get_x(), output.get_y()).get_active():
+                                #New output. Store the new output as an unresolved input and increase outputs counter
+                                new_unresolved_inputs.append(output)
+                                outputs += 1
+
+                        #Spit out a warning if there is a node with no active outputs
+                        if outputs == 0:
+                            print("Warning! CGP execution with active node with no active outputs!")
+
+                        #We know now the complexity of the node, so can build a matrix representation and add it to the system
+                        qs.add_operator(node.calculate_matrix(inputs, outputs))
+
+                #There may be edges that were not matched to a node in this layer. If the CGP representation is correctly coded these will all be
+                #Edges anticipated in future layers
+                for i in range(len(unresolved_inputs)):
+                    #Get ith unresolved input
+                    unresolved = unresolved_inputs[i]
+
+                    #Have we matched this input?
+                    already_matched = False
+                    for j in range(len(resolved_inputs)):
+                        #Get jth resolved input
+                        resolved = resolved_inputs[j]
+                        if unresolved.get_x() == resolved.get_x() and unresolved.get_y() == resolved.get_y() and unresolved.get_z() == resolved.get_z():
+                            already_matched = True
+
+                    #When we know that the ith input has not been resolved, we push that input to the bottom of the system, transition it with
+                    #a wire operator and insert it into the new unresolved inputs list on the other side of the layer, e.g. resolve this later
+                    if not already_matched:
+                        #If the unresolved input has an x coordinate that indicates it should have been resolved by now e.g.
+                        #Existed in an earlier layer than this, spit out a warning
+                        if unresolved.get_y() < layer_index:
+                            print("Warning! Unresolved connection points to node that should already be resolved!")
+                        #Wire has form (1, 0), (0, 1) e.g. 2x2 identity Matrix
+                        qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+                        resolved_inputs.append(unresolved)
+                        unresolved_inputs.append(unresolved)
+
+                #Update unresolved_inputs
+                unresolved_inputs = new_unresolved_inputs
+
             #Close the last layer
             qs.close_layer()
 
@@ -291,6 +377,8 @@ class ZX_CGP:
             qs.compile()
             return qs
 
+        def active_pass(self):
+            return None
 
 
 
