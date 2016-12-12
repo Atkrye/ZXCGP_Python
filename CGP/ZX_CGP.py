@@ -1,10 +1,11 @@
-from CGP.ZXNode import *
-from CGP.EdgePointer import *
+from ZXNode import *
+from EdgePointer import *
 import random
 import math
-from CGP.QuantumSystem import *
+from QuantumSystem import *
 from random import gauss
 #Defines a CGP grid that can be evolved by some evolutionary algorithm
+#Includes a method for converting said CGP grid into a QuantumSystem based on its active nodes
 class ZX_CGP:
         #Params:
         #i, number of inputs
@@ -63,19 +64,21 @@ class ZX_CGP:
             return ret
 
         #Mutate the grid a certain number of times
-        def mutate(self, num_mutations, phase_variance, phase_reset_granularity):
+        def mutate(self, num_mutations, phase_variance, phase_reset_granularity, disconnect_rate):
             for mut in range(num_mutations):
-                print(self)
                 #Keep retrying until mutation is successful
                 success = False
                 while not success:
                     #Pick a node. Can be output or hidden, not input
                     y = 1 + random.randint(0, self.n)
                     x = random.randint(0, len(self.grid[y]) - 1)
-                    success = self.mutate_node(self.grid[y][x], phase_variance, phase_reset_granularity)
+                    success = self.mutate_node(self.grid[y][x], phase_variance, phase_reset_granularity, disconnect_rate)
+                #Once mutated, do an active pass. This is expensive and could be optimized, but relative to
+                #Quantum complexity this is arbitrary
+                self.active_pass()
 
         #Function mutates a specific node
-        def mutate_node(self, mutation_node, phase_variance, phase_reset_granularity):
+        def mutate_node(self, mutation_node, phase_variance, phase_reset_granularity, disconnect_rate):
             #Uniformally, choose between function mutation, edge mutation and phase mutation
             prob = random.random()
             if prob < 1 / 3:
@@ -90,9 +93,11 @@ class ZX_CGP:
                 return False
             else:
                 #Edge mutation. This may fail by creating a graph with too high complexity
-                return self.mutate_edge(mutation_node)
+                return self.mutate_edge(mutation_node, disconnect_rate)
 
         #Method mutates the function of a specified node
+        #Params are mutation_node, the node to mutate, and phase_reset_granularity; the degree to which phase
+        #Should be reset. If the granularity is -1, we do not change the phase
         def mutate_function(self, mutation_node, phase_reset_granularity):
             #Function mutation. Function can have 3 values but we already have 1 so we choose between the other 2
 
@@ -147,9 +152,19 @@ class ZX_CGP:
             return self.grid[x][y]
 
         #Method mutates an edge for a specific node
-        def mutate_edge(self, mutation_node):
+        def mutate_edge(self, mutation_node, disconnect_rate):
             #Pick an input to change
             input = random.randint(0, mutation_node.get_inputs_size() - 1)
+
+            #Disconnect case - disconnect the input according to disconnect)rate
+            if random.random() < disconnect_rate:
+                        mutation_node.set_input(input, None)
+                        if mutation_node.get_active():
+                            self.changed = True
+                        else:
+                            self.changed = False
+                        #Disconnects cannot complexify circuits so a complexity check is unnecessary
+                        return True
 
             # Pick a node to use as input. Can be input or hidden with y < target mutant's y, not output
             if mutation_node.get_x() == 1:
@@ -217,8 +232,8 @@ class ZX_CGP:
                 new_active = []
                 #Check every currently considered node to see if it is in this layer
                 for node in active:
-                    #y coordinate check
-                    if node.get_y() == l:
+                    #x coordinate check - is the node we're looking for in this layer?
+                    if node.get_x() == l:
                         #Node is found in this layer. Add it to active nodes
                         active_nodes.append(node)
                     else:
@@ -252,6 +267,8 @@ class ZX_CGP:
             return True
 
         #Builds a matrix equivalent of the zx graph expressed in the phenotype
+        #This (bloated) method treats the individual as a ZX Graph by simply ignoring inactive nodes as it iterates
+        #Through the graph, replacing each node with its matrix equivalent and resolving connections using the construct_connection_matrix method
         def generate_qsystem(self):
             #Ensure we have an up-to-date notion of which nodes are active
             self.active_pass()
@@ -284,6 +301,9 @@ class ZX_CGP:
 
                 #Calculate Matrix for input. Input is always green with phase 0.0 e.g. a wire for 1 output
                 qs.add_operator(node.calculate_matrix(inputs, outputs))
+                
+            #Close the input layer
+            qs.close_layer()
 
             #Iterate through each hidden layer
             for l in range(self.n + 1):
@@ -293,7 +313,7 @@ class ZX_CGP:
                 #List to store which inputs have been matched to which vertical index in the quantum system
                 resolved_inputs = []
 
-                #Close the previous layer and start a new one
+                #Start a new layer
                 qs.new_layer()
 
                 #input layer is index 0 so shuffle index one to right
@@ -377,13 +397,83 @@ class ZX_CGP:
             qs.compile()
             return qs
 
+        #Recalculates which nodes in the individual are active by sweeping backwards from the outputs.
+        #Code largely based on check_complexity method in this module
         def active_pass(self):
-            return None
+            #Initially, set all nodes (except outputs) to inactive. This is to ensure no nodes which are not active are
+            #Left active from the previous evaluation
+            for x in range(self.n):
+                    for y in range(self.m):
+                            self.grid[x + 1][y].set_active(False)
+
+            #Inputs are initially inactive too
+            for i in range(self.i):
+                    self.grid[0][i].set_active(False)
+            
+            active = []
+            #Get our initial output connections from the outputs
+            for o in self.grid[self.n + 1]:
+                #Outputs are always active
+                o.set_active(True)
+                for input in range(o.get_inputs_size()):
+                    inp = o.get_input(input)
+                    if inp is not None:
+                        active.append(inp)
+
+            #If active is bigger than the max complexity, then the check fails
+            if len(active) > self.c:
+                return False
+
+            l = self.n + 1
+            #Iterate from back to front, layer by layer, removing nodes that are present from the active list and adding their inputs
+            while l > 0:
+                l = l - 1
+                active_nodes = []
+                new_active = []
+                #Check every currently considered node to see if it is in this layer
+                for node in active:
+                    #y coordinate check
+                    if node.get_x() == l:
+                        #Node is found in this layer. Add it to active nodes
+                        active_nodes.append(node)
+                    else:
+                        #Node is not found in this layer. Add it to new_active so that it is checked next layer
+                        new_active.append(node)
+
+                #Iterate through every active node in this layer, removing duplicates and adding children to new active so that they are checked next layer
+
+                #To remove duplicates create a string list to abuse python's set function with
+                string_active = []
+                for a in active_nodes:
+                    string_active.append(str(a.get_x()) + ":" + str(a.get_y()))
+                reduced = list(set(string_active))
+                #Use this set to induce active elements created by active nodes in this layer
+                for a in reduced:
+                    sp = a.split(":")
+                    x = sp[0]
+                    y = sp[1]
+                    anode = self.get_node(int(x), int(y))
+                    
+                    for i in range(anode.get_inputs_size()):
+                        if anode.get_input(i) is not None:
+                            new_active.append(anode.get_input(i))
+                    #Mark the active node
+                    anode.set_active(True)
+                #Copy new active list over
+                active = new_active
 
 
 
 
 
-zx = ZX_CGP(2,3,3,2,2,4,4)
-zx.mutate(10000, 0.3, 16)
+zx = ZX_CGP(2,3,3,2,6,6,4)
+zx.mutate(100, 0.3, 16, 0.1)
+print(zx)
+zx.mutate(1, 0.3, 16, 0.1)
+print(zx)
+zx.mutate(1, 0.3, 16, 0.1)
+print(zx)
+zx.mutate(1, 0.3, 16, 0.1)
+print(zx)
+zx.mutate(1, 0.3, 16, 0.1)
 print(zx)

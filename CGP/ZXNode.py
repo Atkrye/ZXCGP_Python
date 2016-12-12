@@ -1,5 +1,4 @@
-from enum import Enum
-from CGP.CMatrix import *
+from CMatrix import *
 import math
 import cmath
 def enum(**named_values):
@@ -36,7 +35,11 @@ class ZXNode:
 
 
     def __str__(self):
-        rep = "(" + str(self.x) + "," + str(self.y) + "): " + self.function + " " + str(self.phase) + " " + "\nInputs: "
+        rep = "(" + str(self.x) + "," + str(self.y) + "): " + self.function + " " + str(self.phase)
+        if self.active:
+            rep += " ACTIVE"
+        rep += "\nInputs: "
+
         for i in range(len(self.inputs)):
             if self.inputs[i] is None:
                 rep += "None, "
@@ -109,7 +112,7 @@ class ZXNode:
             #Default calculate Green Node CMatrix
             return ZXNode.calculate_general_green(inputs, outputs, self.phase)
 
-    #Calculates Complex Matrix representation of a Hadamard node for a fixed number of inputs and outputs
+    #Generates Complex Matrix representation of a Hadamard node for a fixed number of inputs and outputs
     #We interpret this as Green(1, outputs, 0 phase) * conventional Hadamard Matrix * Green(inputs, 1, 0 phase)
     #E.g. Green splitters on either side of a conventional Hadamard (1/root(2) [[1, 1],[1, -1]]) and 1-input 1-output scenarios then generating
     #A conventional hadamard operation as Green(1, 1, 0 phase) is effectively a wire
@@ -128,13 +131,53 @@ class ZXNode:
     #Generates a CMatrix for a Green Node for a certain number of inputs, outputs and phase.
     #This is a 2^input width * 2^input high Complex Matrix with all elements set to 0 except the first (0, 0) = 1 + 0i
     #And the last (2^input, 2^output) = e ^ (i * phase)
+    #All generator cases (0 inputs) are resolved in the green operator as both Hadamard & Red with 0 inputs
+    #Are instantiated using a 0 input Green (in Hadamard, we have 0-in, 1-out Green followed by H, followed by 1-in, O-out Green)
+    #(in Red, we have 0 x H = [[1.0 + 0j]] then 0-in, O-out Green, then O x H masking the output).
+    #Behaviour in the generator case is resolved as generating a bell state |q ^ O> = cos(phase).|0 ^ O> + sin(phase).|1 ^ O> as this
+    #Generates a valid distribution which has a square sum of 1
+    #There is also a destructor case (0 outputs) that can occur when an input of a ZX_CGP individual has no outputs.
+    #That qubit must be closed/destroyed so that the constructed QuantumSystem.py QSystem can act on an input of a
+    #Prespecified size without producing an error when an input is unused (e.g. has 0 outputs).
     @staticmethod
     def calculate_general_green(inputs, outputs, phasein):
-        #Matrices are stored column by column
         inbits = int(math.pow(2,inputs))
         outbits = int(math.pow(2,outputs))
+
+        #By the nature of ZX_CGP, there is never a 0-in, 0-out case as 0-out can only occur in input nodes which
+        #Are inherently 1-in. If you are designing a system where these may occur please adjust this catchment accordingly
+        if inputs == 0 and outputs == 0:
+            print("Warning! 0-input, 0-output Green node attempted! Aborting matrix contstruction!")
+            return None
+        
+        #Catch the generator case
+        if inputs == 0:
+            #Generator has cos(phase) |0 ^ O> + sin(phase) |1 ^ O> e.g. all other mixed states have p = 0
+            matrix = [[0 + 0j for y in range(outbits)]]
+            #|0 ^ O> state
+            matrix[0][0] = math.cos(phasein) + 0j
+            #|1 ^ O> state
+            matrix[0][outbits - 1] = math.sin(phasein) + 0j
+            return CMatrix(matrix)
+
+        #Catch the destructor case
+        if outputs == 0:
+            #Destructors are inherently not trace preserving. In fact, a 0 phase destructor will only store states where the destroyed
+            #Qubit has value |0>, so if all states are in the |1> case, then the resultant QState is literally empty
+            matrix = [[0 + 0j] for x in range(inbits)]
+            #|0 ^ I> state
+            matrix[0][0] = math.cos(phasein) + 0j
+            #|1 ^ I> state
+            matrix[inbits - 1][0] = math.sin(phasein) + 0j
+            #Since these square sum to 1 this cannot be trace increasing
+            return CMatrix(matrix)
+
+            
+        #Matrices are stored column by column
         matrix = [[0 + 0j for y in range(outbits)] for x in range(inbits)]
+        #Top left element is simply 1
         matrix[0][0] = 1 + 0j
+        #Bottom right element is e ^ (i * phase)
         matrix[inbits - 1][outbits - 1] = cmath.exp(float(phasein) * 1j)
         return CMatrix(matrix)
 
@@ -164,4 +207,6 @@ class ZXNode:
 inp = int(1)
 out = int(2)
 phase = 0.0
-print(ZXNode.calculate_hadamard(inp,out))
+#print(ZXNode.calculate_hadamard(inp,out))
+#print(ZXNode.calculate_general_green(0,2,math.pi / 4))
+#print(ZXNode.calculate_general_green(2,0,math.pi / 4))

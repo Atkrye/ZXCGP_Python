@@ -1,5 +1,5 @@
-from CGP.CMatrix import CMatrix
-from CGP.QuantumState import QState
+from CMatrix import CMatrix
+from QuantumState import QState
 import math
 #Class for building and using a Quantum System made of CMatrix operators and basis measurement layers
 class QSystem:

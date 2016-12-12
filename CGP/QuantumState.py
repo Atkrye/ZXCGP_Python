@@ -1,4 +1,4 @@
-from CGP.CMatrix import *
+from CMatrix import *
 import math
 import random
 

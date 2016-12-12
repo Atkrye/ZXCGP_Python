@@ -16,3 +16,6 @@ class EPointer:
     #Which I/O on the target is used
     def get_z(self):
         return self.z
+
+    def __str__(self):
+        return str(self.x) + ":" + str(self.y) + " - " + str(self.z)
