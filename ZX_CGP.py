@@ -74,7 +74,7 @@ class ZX_CGP:
                     x = random.randint(0, len(self.grid[y]) - 1)
                     success = self.mutate_node(self.grid[y][x], phase_variance, phase_reset_granularity, disconnect_rate)
                 #Once mutated, do an active pass. This is expensive and could be optimized, but relative to
-                #Quantum complexity this is arbitrary
+                #Quantum complexity this is arbitrary at higher numbers of qubits (max complexity)
                 self.active_pass()
 
         #Function mutates a specific node
@@ -274,10 +274,10 @@ class ZX_CGP:
             self.active_pass()
 
             #See QuantumSystem.py for usage
-            q = QSystem()
+            qs = QSystem()
             grid = self.grid
             #Iterate front to back, building layers
-            q.new_layer()
+            qs.new_layer()
             input_layer = self.grid[0]
             unresolved_inputs = []
             new_unresolved_inputs = []
@@ -300,13 +300,13 @@ class ZX_CGP:
                             outputs += 1
 
                 #Calculate Matrix for input. Input is always green with phase 0.0 e.g. a wire for 1 output
-                qs.add_operator(node.calculate_matrix(inputs, outputs))
+                qs.add_operator(node.calculate_operator(inputs, outputs))
                 
             #Close the input layer
             qs.close_layer()
 
             #Iterate through each hidden layer
-            for l in range(self.n + 1):
+            for l in range(self.n):
                 #Reset the new unresolved inputs list
                 new_unresolved_inputs = []
 
@@ -318,21 +318,26 @@ class ZX_CGP:
 
                 #input layer is index 0 so shuffle index one to right
                 layer_index = l + 1
+                found_node = False
 
                 #Go through each hidden node in this layer
                 for j in range(self.m):
                     #Get jth corresponding node
+                    print(layer_index)
+                    print(j)
                     node = self.get_node(layer_index, j)
 
+                    found_node = True
                     #A node is only relevant if its has already been tagged active
                     if node.get_active():
+                        print(str(layer_index) + "," + str(j) + " active")
                         inputs = 0
                         outputs = 0
                         #Try to find some edge connecting to this node by searching over all unresolved edges. It is possible for a node to be active with no active inputs
                         #This would make the node a generator, but this behaviour is accommodated for and can be seen in ZXNode.py, in the ZXNode class, calculate_matrix() method
                         #We split the process into matching for individual inputs for the node. The purpose of doing this is to maintain a clear ordering on
                         #The inputs and outputs.
-                        for e in range(node.get_inputs_size):
+                        for e in range(node.get_inputs_size()):
                             for k in range(len(unresolved_inputs)):
                                 #Get kth edge
                                 input = unresolved_inputs[k]
@@ -359,39 +364,93 @@ class ZX_CGP:
                             print("Warning! CGP execution with active node with no active outputs!")
 
                         #We know now the complexity of the node, so can build a matrix representation and add it to the system
-                        qs.add_operator(node.calculate_matrix(inputs, outputs))
+                        qs.add_operator(node.calculate_operator(inputs, outputs))
 
-                #There may be edges that were not matched to a node in this layer. If the CGP representation is correctly coded these will all be
-                #Edges anticipated in future layers
-                for i in range(len(unresolved_inputs)):
-                    #Get ith unresolved input
-                    unresolved = unresolved_inputs[i]
+                #Only build the layer if an operator has been added
 
-                    #Have we matched this input?
-                    already_matched = False
-                    for j in range(len(resolved_inputs)):
-                        #Get jth resolved input
-                        resolved = resolved_inputs[j]
-                        if unresolved.get_x() == resolved.get_x() and unresolved.get_y() == resolved.get_y() and unresolved.get_z() == resolved.get_z():
-                            already_matched = True
+                if found_node:
+                    #There may be edges that were not matched to a node in this layer. If the CGP representation is correctly coded these will all be
+                    #Edges anticipated in future layers
+                    for i in range(len(unresolved_inputs)):
+                        #Get ith unresolved input
+                        unresolved = unresolved_inputs[i]
 
-                    #When we know that the ith input has not been resolved, we push that input to the bottom of the system, transition it with
-                    #a wire operator and insert it into the new unresolved inputs list on the other side of the layer, e.g. resolve this later
-                    if not already_matched:
-                        #If the unresolved input has an x coordinate that indicates it should have been resolved by now e.g.
-                        #Existed in an earlier layer than this, spit out a warning
-                        if unresolved.get_y() < layer_index:
-                            print("Warning! Unresolved connection points to node that should already be resolved!")
-                        #Wire has form (1, 0), (0, 1) e.g. 2x2 identity Matrix
-                        qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-                        resolved_inputs.append(unresolved)
-                        unresolved_inputs.append(unresolved)
+                        #Have we matched this input?
+                        already_matched = False
+                        for j in range(len(resolved_inputs)):
+                            #Get jth resolved input
+                            resolved = resolved_inputs[j]
+                            if unresolved.get_x() == resolved.get_x() and unresolved.get_y() == resolved.get_y() and unresolved.get_z() == resolved.get_z():
+                                already_matched = True
+
+                        #When we know that the ith input has not been resolved, we push that input to the bottom of the system, transition it with
+                        #a wire operator and insert it into the new unresolved inputs list on the other side of the layer, e.g. resolve this later
+                        if not already_matched:
+                            #If the unresolved input has an x coordinate that indicates it should have been resolved by now e.g.
+                            #Existed in an earlier layer than this, spit out a warning
+                            if unresolved.get_x() < layer_index:
+                                print("Warning! Unresolved connection points to node that should already be resolved!")
+                            #Wire has form (1, 0), (0, 1) e.g. 2x2 identity Matrix
+                            qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+                            resolved_inputs.append(unresolved)
+                            new_unresolved_inputs.append(unresolved)
+
+                    #A new qubit may have been generated. A connection matrix is only necessary when qubits previously existed.
+
+                    if len(unresolved_inputs) > 0:
+                        #Close, adding a newly generated connection matrix (that reorders qubits so that they are passed from correct output to correct input
+                        qs.close_layer_with_connection_matrix(ZX_CGP.calculate_connection_matrix(unresolved_inputs, resolved_inputs))
+                    else:
+                        qs.close_layer()
 
                 #Update unresolved_inputs
                 unresolved_inputs = new_unresolved_inputs
 
-            #Close the last layer
-            qs.close_layer()
+            #Build output layer
+            # Go through each output node in this layer
+
+            #List to store which inputs have been matched to which vertical index in the quantum system
+            resolved_inputs = []
+
+            #Start a new layer
+            qs.new_layer()
+
+            for j in range(self.o):
+                # Get jth corresponding node
+                node = self.get_node(self.n + 1, j)
+                print(node.get_x())
+                print(node.get_y())
+
+                found_node = True
+                inputs = 0
+
+                #All output nodes have 1 output
+                outputs = 1
+
+                # Try to find some edge connecting to this node by searching over all unresolved edges. It is possible for a node to be active with no active inputs
+                # This would make the node a generator, but this behaviour is accommodated for and can be seen in ZXNode.py, in the ZXNode class, calculate_matrix() method
+                # We split the process into matching for individual inputs for the node. The purpose of doing this is to maintain a clear ordering on
+                # The inputs and outputs.
+                for e in range(node.get_inputs_size()):
+                    for k in range(len(unresolved_inputs)):
+                        # Get kth edge
+                        input = unresolved_inputs[k]
+
+                        # Check if kth edge has coordinates matching this node
+                        if input.get_x() == node.get_x() and input.get_y() == node.get_y() and e == input.get_z():
+                            # Matching edge. Store the match as a resolved input and increase inputs counter
+                            resolved_inputs.append(input)
+                            inputs += 1
+
+                # We know now the complexity of the node, so can build a matrix representation and add it to the system
+                qs.add_operator(node.calculate_operator(inputs, outputs))
+                print("Output op " + str(j))
+                print(node.calculate_operator(inputs,outputs))
+            if len(unresolved_inputs) != 0:
+                qs.close_layer_with_connection_matrix(ZX_CGP.calculate_connection_matrix(unresolved_inputs, resolved_inputs))
+            else:
+                qs.close_layer()
+
 
             #Compile the system
             qs.compile()
@@ -462,18 +521,117 @@ class ZX_CGP:
                 #Copy new active list over
                 active = new_active
 
+        #Takes two lists, in and out, which are assumed to be two orderings on the same set of EdgePointers
+        #Returns a connection matrix that maps each qubit state to its transformed state to provide the implied set of swaps
+        @staticmethod
+        def calculate_connection_matrix(inE, outE):
+            if len(inE) != len(outE):
+                #Lists should be equal size, else the connection matrix is incorrect
+                print("Warning! generating connection matrix of mismatched size:" + str(inE) + " vs. " + str(outE))
+            size = int(math.pow(2, len(inE)))
+
+            #Initiate connection matrix as zeros
+            cm = [[0 + 0j for i in range(size)] for j in range(size)]
+
+            #Build bit transformation. This provides the index mapping for each qubit in the system
+            bittrans = [0 for i in range(len(inE))]
+
+            #Cycle in each edge pointer, trying to find its match in the out. The found match is the index mapping for that qubit
+            for i in range(len(inE)):
+                un = inE[i]
+                #print("Check " + str(i) + ": " + str(un))
+                found = False
+                for j in range(len(outE)):
+                    re = outE[j]
+                    #print("Against " + str(j) + ": " + str(re))
+                    #Check if this is a match
+                    if un.get_x() == re.get_x() and un.get_y() == re.get_y() and un.get_z() == re.get_z():
+                        #We have found a match
+                        if found:
+                            #Second match! Provided inputs are flawed
+                            print("Warning! the provided input, " + str(un) + ", was found twice or more in the output.")
+                        else:
+                            bittrans[i] = j
+                            found = True
+                    #else:
+                    #    print("Fail")
+                if not found:
+                    #This qubit has no out match, Provided inputs are flawed
+                    print("Warning! the provided input, " + str(un) + ", was not found in the output.")
+            #Bit transformation contructed. Now iterate through bit form of each index
+            #print(bittrans)
+
+            #Now each state maps to the state generated by applying the bit transformation to it
+            #Cycle through each state
+            for state in range(size):
+
+                #Converts state to bit state, a bitstring array
+                bstate = list("{0:b}".format(state))
+
+                #Ensures the bstate is the expected length (for smaller values)
+                while len(bstate) < len(inE):
+                    bstate = ["0"] + bstate
+
+                #Transform the bit state using the transformation
+                newstate = ["0"] * len(inE)
+
+                #Map each bit
+                for bit in range(len(inE)):
+                    newstate[bittrans[bit]] = bstate[bit]
+
+                #Convert the bitstring array, newstate, into an integer using base 2 formatting
+                nstate = int(''.join(map(str, newstate)), 2)
+                #Store this change in the connection matrix
+                cm[state][nstate] = 1 + 0j
+            return CMatrix(cm)
 
 
 
 
-zx = ZX_CGP(2,3,3,2,6,6,4)
+
+zx = ZX_CGP(2,3,3,2,6,6,3)
 zx.mutate(100, 0.3, 16, 0.1)
-print(zx)
+#print(zx)
 zx.mutate(1, 0.3, 16, 0.1)
-print(zx)
+#print(zx)
 zx.mutate(1, 0.3, 16, 0.1)
-print(zx)
+#print(zx)
 zx.mutate(1, 0.3, 16, 0.1)
-print(zx)
+#print(zx)
 zx.mutate(1, 0.3, 16, 0.1)
+#print(zx)
+
+#Linear transformation expected
+inE = [EPointer(0,0,0),EPointer(0,0,1)]
+outE = [EPointer(0,0,0),EPointer(0,0,1)]
+#print(ZX_CGP.calculate_connection_matrix(inE, outE))
+
+#Swap transformation expected
+inE = [EPointer(0,0,0),EPointer(0,1,1)]
+outE = [EPointer(0,1,1),EPointer(0,0,0)]
+#print(ZX_CGP.calculate_connection_matrix(inE, outE))
+
+#Linear transformation expected
+inE = [EPointer(0,0,0),EPointer(0,0,1),EPointer(0,0,3)]
+outE = [EPointer(0,0,0),EPointer(0,0,1),EPointer(0,0,3)]
+#print(ZX_CGP.calculate_connection_matrix(inE, outE))
+
+#Wire tensor Swap transformation expected
+inE = [EPointer(0,0,0),EPointer(0,0,3),EPointer(0,0,1)]
+outE = [EPointer(0,0,0),EPointer(0,0,1),EPointer(0,0,3)]
+#print(ZX_CGP.calculate_connection_matrix(inE, outE))
+
+#Swap tensor Wire transformation expected
+inE = [EPointer(0,0,1),EPointer(0,0,0),EPointer(0,0,3)]
+outE = [EPointer(0,0,0),EPointer(0,0,1),EPointer(0,0,3)]
+#print(ZX_CGP.calculate_connection_matrix(inE, outE))
+
+#Swap tensor Wire * Wire tensor Swap transformation expected
+inE = [EPointer(0,0,1),EPointer(0,0,0),EPointer(0,0,3)]
+outE = [EPointer(0,0,3),EPointer(0,0,0),EPointer(0,0,1)]
+#print(ZX_CGP.calculate_connection_matrix(inE, outE))
+
 print(zx)
+q = zx.generate_qsystem()
+print("Matrix")
+print(zx.generate_qsystem().get_compiled_version().get_layer(0))

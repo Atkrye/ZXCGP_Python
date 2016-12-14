@@ -107,7 +107,7 @@ class ZXNode:
             return ZXNode.calculate_hadamard(inputs, outputs)
         elif self.function is ZXNode.Function_Set.R:
             #Calculate Red Node CMatrix
-            return self.calculate_red(inputs, outputs, self.phase)
+            return self.calculate_general_red(inputs, outputs, self.phase)
         else:
             #Default calculate Green Node CMatrix
             return ZXNode.calculate_general_green(inputs, outputs, self.phase)
@@ -199,7 +199,7 @@ class ZXNode:
         for j in range(outputs):
             outmatrix = outmatrix / h
 
-        green = ZXNode.calculate_general_green(2, 2,phase)
+        green = ZXNode.calculate_general_green(inputs, outputs,phase)
         return outmatrix * green * inmatrix
 
 

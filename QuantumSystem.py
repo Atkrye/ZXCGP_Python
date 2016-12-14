@@ -52,6 +52,13 @@ class QSystem:
         self.measure_flags.append(False)
         self.close_layer()
 
+    #Gets the most recent compilation
+    def get_compiled_version(self):
+        return self.compiled_system
+
+    def get_layer(self, i):
+        return self.layers[i]
+
     #Adds a matrix operator to the current layer
     def add_operator(self, operator):
         self.current_layer.append(operator)
@@ -76,6 +83,9 @@ class QSystem:
                     m = None
                 self.compiled_system.add_measurement_layer(self.layers[i])
             else:
+                print("Layer " + str(i))
+                print(self.layers[i])
+                print(m)
                 if m is None:
                     m = self.layers[i]
                 else:
@@ -83,7 +93,6 @@ class QSystem:
         if m is not None:
             self.compiled_system.add_operator(m)
             self.compiled_system.close_layer()
-            m = None
 
     #Applies the system to some input quantum state
     def apply(self, input_state):
@@ -105,51 +114,51 @@ class QSystem:
                     current_state = current_state.apply_operator(current_layer)
             return current_state
 
-CNOT = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j]])
-CZ = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, -1 + 0j]])
-SWAP = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j]])
-#Teleportation Example
-qs = QSystem()
-qs.new_layer()
-#Wire, Hadamard, Wire
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-qs.add_operator(CMatrix([[math.sqrt(1 / 2) + 0j,math.sqrt(1 / 2) + 0j],[math.sqrt(1 / 2) + 0j, -(math.sqrt(1 / 2)) + 0j]]))
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-qs.new_layer()
-#Wire, CNOT
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j]]))
-qs.new_layer()
-#CNOT, Wire
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j]]))
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-qs.new_layer()
-#Hadamard, Wire, Wire
-qs.add_operator(CMatrix([[math.sqrt(1 / 2) + 0j,math.sqrt(1 / 2) + 0j],[math.sqrt(1 / 2) + 0j, -(math.sqrt(1 / 2)) + 0j]]))
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-qs.close_layer()
-#Measurement
-qs.add_measurement_layer([0,1])
-#Corrections
-#Wire, CNOT
-qs.new_layer()
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-qs.add_operator(CNOT)
-#SWAP, Wire
-qs.new_layer()
-qs.add_operator(SWAP)
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-#Wire, CNOT
-qs.new_layer()
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-qs.add_operator(CZ)
-#SWAP, Wire
-qs.new_layer()
-qs.add_operator(SWAP)
-qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
-qs.close_layer()
-qs.compile()
+# CNOT = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j]])
+# CZ = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, -1 + 0j]])
+# SWAP = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j]])
+# #Teleportation Example
+# qs = QSystem()
+# qs.new_layer()
+# #Wire, Hadamard, Wire
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# qs.add_operator(CMatrix([[math.sqrt(1 / 2) + 0j,math.sqrt(1 / 2) + 0j],[math.sqrt(1 / 2) + 0j, -(math.sqrt(1 / 2)) + 0j]]))
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# qs.new_layer()
+# #Wire, CNOT
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j]]))
+# qs.new_layer()
+# #CNOT, Wire
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j]]))
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# qs.new_layer()
+# #Hadamard, Wire, Wire
+# qs.add_operator(CMatrix([[math.sqrt(1 / 2) + 0j,math.sqrt(1 / 2) + 0j],[math.sqrt(1 / 2) + 0j, -(math.sqrt(1 / 2)) + 0j]]))
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# qs.close_layer()
+# #Measurement
+# qs.add_measurement_layer([0,1])
+# #Corrections
+# #Wire, CNOT
+# qs.new_layer()
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# qs.add_operator(CNOT)
+# #SWAP, Wire
+# qs.new_layer()
+# qs.add_operator(SWAP)
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# #Wire, CNOT
+# qs.new_layer()
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# qs.add_operator(CZ)
+# #SWAP, Wire
+# qs.new_layer()
+# qs.add_operator(SWAP)
+# qs.add_operator(CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]]))
+# qs.close_layer()
+# qs.compile()
 
 #Test on (A|0| + B|1|)|00| with A = 1/2 and B = root(3)/4
 state = QState([math.sqrt(1/4) + 0j, 0 + 0j, 0 + 0j, 0 + 0j, math.sqrt(3/4) + 0j, 0 + 0j,0 + 0j, 0 + 0j])
