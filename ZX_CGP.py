@@ -120,32 +120,32 @@ class ZX_CGP:
             return count
 
         #Mutate the grid a certain number of times
-        def mutate(self, num_mutations, phase_variance, phase_reset_granularity, disconnect_rate):
+        def mutate(self, num_mutations, phase_variance, phase_reset_granularity, disconnect_rate, phase_reset_rate):
             self.changed = False
             for mut in range(num_mutations):
+                #Once mutated, do an active pass. This is expensive and could be optimized, but relative to
+                #Quantum complexity this is arbitrary at higher numbers of qubits (max complexity)
+                self.active_pass()
                 #Keep retrying until mutation is successful
                 success = False
                 while not success:
                     #Pick a node. Can be output or hidden, not input
                     y = 1 + random.randint(0, self.n)
                     x = random.randint(0, len(self.grid[y]) - 1)
-                    success = self.mutate_node(self.grid[y][x], phase_variance, phase_reset_granularity, disconnect_rate)
-                #Once mutated, do an active pass. This is expensive and could be optimized, but relative to
-                #Quantum complexity this is arbitrary at higher numbers of qubits (max complexity)
-                self.active_pass()
+                    success = self.mutate_node(self.grid[y][x], phase_variance, phase_reset_granularity, disconnect_rate, phase_reset_rate)
 
         #Function mutates a specific node
-        def mutate_node(self, mutation_node, phase_variance, phase_reset_granularity, disconnect_rate):
+        def mutate_node(self, mutation_node, phase_variance, phase_reset_granularity, disconnect_rate, phase_reset_rate):
             #Uniformally, choose between function mutation, edge mutation and phase mutation
             prob = random.random()
             if prob < 1 / 3:
                 #Mutate function
-                self.mutate_function(mutation_node, phase_reset_granularity)
+                self.mutate_function(mutation_node, phase_reset_rate, phase_reset_granularity)
                 #Function mutations cannot fail and do not change the active topology of the graph so cannot affect complexity.
                 return True
             elif prob < 2 / 3:
                 #Phase mutation
-                self.mutate_phase(mutation_node, phase_variance)
+                self.mutate_phase(mutation_node, phase_variance, phase_reset_rate, phase_reset_granularity)
                 #Phase mutations cannot fail and do not change the active topology of the graph so cannot affect complexity.
                 return False
             else:
@@ -155,7 +155,7 @@ class ZX_CGP:
         #Method mutates the function of a specified node
         #Params are mutation_node, the node to mutate, and phase_reset_granularity; the degree to which phase
         #Should be reset. If the granularity is -1, we do not change the phase
-        def mutate_function(self, mutation_node, phase_reset_granularity):
+        def mutate_function(self, mutation_node, phase_reset_rate, phase_reset_granularity):
             #Function mutation. Function can have 3 values but we already have 1 so we choose between the other 2
 
             if mutation_node.get_function() is ZXNode.Function_Set.H:
@@ -178,17 +178,16 @@ class ZX_CGP:
 
             else:
                 #Is already Red
-                if __name__ == '__main__':
-                    if bool(random.getrandbits(1)):
-                       #Pick green
-                       mutation_node.set_function_green()
-                    else:
-                       #Pick hadamard
-                       mutation_node.set_function_hadamard()
+                if bool(random.getrandbits(1)):
+                        #Pick green
+                        mutation_node.set_function_green()
+                else:
+                        #Pick hadamard
+                        mutation_node.set_function_hadamard()
 
             #Execute phase resets. If the granularity of this is -1, then phase remains unchanged
             #Otherwise, its set to rand(k) * 2pi / k e.g. 0 < phase < 2pi at some division of k
-            if phase_reset_granularity is not -1:
+            if random.random() < phase_reset_rate and phase_reset_granularity is not -1:
                 mutation_node.set_phase(random.randint(0, int(phase_reset_granularity)) * 2.0 * math.pi / float(phase_reset_granularity))
 
             #Check if we have updated the active graph
@@ -197,9 +196,13 @@ class ZX_CGP:
 
 
         #Method mutates phase for a specific node
-        def mutate_phase(self, mutation_node, phase_variance):
-            #Phase mutation is phase + gaussian(0, variance)
-            mutation_node.set_phase(mutation_node.get_phase() + gauss(0.0, phase_variance))
+        def mutate_phase(self, mutation_node, phase_variance, phase_reset_rate, phase_reset_granularity):
+            if random.random() < phase_reset_rate:
+                    #Reset the phase according to the given granularity
+                    mutation_node.set_phase(random.randint(0, int(phase_reset_granularity)) * 2.0 * math.pi / float(phase_reset_granularity))
+            else:
+                    #Phase mutation is phase + gaussian(0, variance)
+                    mutation_node.set_phase(mutation_node.get_phase() + gauss(0.0, phase_variance))
 
             #Check if we have updated the active graph. Hadamards do not use phase!
             if mutation_node.get_active() and mutation_node.get_function() is not ZXNode.Function_Set.H:
@@ -222,8 +225,6 @@ class ZX_CGP:
                             self.get_node(inp.get_x(), inp.get_y()).set_output(inp.get_z(), None)
                         if mutation_node.get_active() and inp is not None:
                             self.changed = True
-                        else:
-                            self.changed = False
                         #Disconnects cannot complexify circuits so a complexity check is unnecessary
                         return True
 
@@ -266,7 +267,12 @@ class ZX_CGP:
                 return False
             else:
                 #Check if mutated node is active or if the old connection is active to check if the phenotype has changed
-                if not mutation_node.get_active() or (old_edge_source is not None and not self.get_node(old_edge_source.get_x(), old_edge_source.get_y()).get_active()):
+                is_node_active = mutation_node.get_active()
+                if old_edge_source is not None:
+                        is_old_source_active = self.get_node(old_edge_source.get_x(), old_edge_source.get_y()).get_active()
+                else:
+                        is_old_source_active = False
+                if is_node_active or is_old_source_active:
                     self.changed = True
                 return True
 
@@ -644,15 +650,15 @@ class ZX_CGP:
 
 
 zx = ZX_CGP(2,3,3,2,6,6,3)
-zx.mutate(100, 0.3, 16, 0.1)
+zx.mutate(100, 0.3, 16, 0.1, 0.1)
 #print(zx)
-zx.mutate(1, 0.3, 16, 0.1)
+zx.mutate(1, 0.3, 16, 0.1, 0.1)
 #print(zx)
-zx.mutate(1, 0.3, 16, 0.1)
+zx.mutate(1, 0.3, 16, 0.1, 0.1)
 #print(zx)
-zx.mutate(1, 0.3, 16, 0.1)
+zx.mutate(1, 0.3, 16, 0.1, 0.1)
 #print(zx)
-zx.mutate(1, 0.3, 16, 0.1)
+zx.mutate(1, 0.3, 16, 0.1, 0.1)
 #print(zx)
 
 #Linear transformation expected

@@ -1,4 +1,4 @@
-#Raw experiment code, written to serve as a basis for parameterized experiment code. Aim is to learn simple CNOT
+#Raw experiment code, written to serve as a basis for parameterized experiment code. Aim is to learn simple BP Generator
 #Function as a ZX Graph
 
 from ZX_CGP import *
@@ -6,33 +6,34 @@ from ZX_CGP import *
 #Define population size
 popsize = 5
 #Define search width
-n = 10
+n = 5
 #Define search height
-m = 10
+m = 5
 #CNOT is 2 inputs
 i = 2
 #CNOT is 2 outputs
 o = 2
 #Define phase reset granularity, the degree to which a node's phase can be reset between 0 and 2pi
-k = 16
+k = 1
 #Mean mutations
-uM = 3
+uM = 5
 #Variance in mutations
-vM = 2
+vM = 5
 #Phase variance; phase is changed on average by 0.5
 p = 1.0
 #Node arity (in)
 a = 3
 #Node arity (out)
-r = 3
+r = 6
 #Max complexity
-c = 3
+c = 4
 #Edge disconnect rate
 d = 0.1
 #Phase reset rate
+pr = 0.3
 
 #Max runs
-max_runs = 2000
+max_runs = 10000
 #Number of checks on fitness function
 checks = 50
 #Target score
@@ -44,7 +45,7 @@ population = [ZX_CGP(i,n,m,o,a,r,c)for x in range(popsize)]
 print("Building population...")
 #Randomize over 10000 mutations. Since each mutation has a reverse this is effectively shuffling
 for ind in population:
-    ind.mutate(10000, p, k, d)
+    ind.mutate(10000, p, k, d, pr)
 
 print("Population built.")
 
@@ -63,11 +64,15 @@ print("Building IO pairings...")
 #Generate IO pairs
 checks_inputs = []
 checks_outputs = []
-cnot = QSystem()
-cnot.new_layer()
-cnot.add_operator(CMatrix([[1 + 0j, 0j, 0j, 0j],[0j, 1 + 0j, 0j, 0j],[0j,0j,0j,1 + 0j],[0j,0j,1 + 0j, 0j]]))
-cnot.close_layer()
-cnot.compile()
+bp = QSystem()
+bp.new_layer()
+bp.add_operator(CMatrix([[(1 / math.sqrt(2)) + 0j, (1 / math.sqrt(2)) + 0j], [(1 / math.sqrt(2)) + 0j, (-1 / math.sqrt(2)) + 0j]]))
+bp.add_operator(CMatrix([[1 + 0j, 0j],[0j, 1 + 0j]]))
+bp.close_layer()
+bp.new_layer()
+bp.add_operator(CMatrix([[1 + 0j, 0j, 0j, 0j],[0j, 1 + 0j, 0j, 0j],[0j,0j,0j,1 + 0j],[0j,0j,1 + 0j, 0j]]))
+bp.close_layer()
+bp.compile()
 for check in range(checks):
     # Get 2 random phases
     qubitA = random.random() * math.pi * 2
@@ -82,7 +87,7 @@ for check in range(checks):
     oo = aO * bO
     # Build superstate of qubits
     input = QState([zz, zo, oz, oo])
-    output = cnot.apply(input)
+    output = bp.apply(input)
     print("Input :\n" + str(input))
     print("Expects output :\n" + str(output))
     checks_inputs.append(input)
@@ -93,21 +98,24 @@ print("IO Pairings built.")
 print("Evaluating IO Parents on ideal solution...")
 
 #Evaluate test set on human solution
-cnot_zx = QSystem()
-cnot_zx.new_layer()
-cnot_zx.add_operator(ZXNode.calculate_general_green(1, 2, 0.0))
-cnot_zx.add_operator(ZXNode.calculate_general_green(1, 1, 0.0))
-cnot_zx.new_layer()
-cnot_zx.add_operator(ZXNode.calculate_general_green(1, 1, 0.0))
-cnot_zx.add_operator(ZXNode.calculate_general_red(2, 1, 0.0))
-cnot_zx.close_layer()
-cnot_zx.compile()
+bp_zx = QSystem()
+bp_zx.new_layer()
+bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
+bp_zx.add_operator(ZXNode.calculate_general_green(1, 1, 0.0))
+bp_zx.new_layer()
+bp_zx.add_operator(ZXNode.calculate_general_green(1, 2, 0.0))
+bp_zx.add_operator(ZXNode.calculate_general_green(1, 1, 0.0))
+bp_zx.new_layer()
+bp_zx.add_operator(ZXNode.calculate_general_green(1, 1, 0.0))
+bp_zx.add_operator(ZXNode.calculate_general_red(2, 1, 0.0))
+bp_zx.close_layer()
+bp_zx.compile()
 error = 0.0
 for check in range(checks):
     input = checks_inputs[check]
     output = checks_outputs[check]
     # Apply the individual to the input
-    real_output = cnot_zx.apply(input)
+    real_output = bp_zx.apply(input)
     real_output.normalize()
 
     # Work out the error
@@ -196,7 +204,7 @@ while gen < max_runs and not perfect:
                 mutations = 1
 
             #Perform mutations
-            population[i].mutate(mutations, p, k, d)
+            population[i].mutate(mutations, p, k, d, pr)
             scores[i] = scores[winner]
         else:
             population[winner].changed = False
