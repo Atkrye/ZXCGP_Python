@@ -6,7 +6,7 @@ from ZX_CGP import *
 #Define population size
 popsize = 5
 #Define search width
-n = 10
+n = 5
 #Define search height
 m = 10
 #CNOT is 2 inputs
