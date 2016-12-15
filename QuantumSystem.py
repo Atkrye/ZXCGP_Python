@@ -83,9 +83,6 @@ class QSystem:
                     m = None
                 self.compiled_system.add_measurement_layer(self.layers[i])
             else:
-                print("Layer " + str(i))
-                print(self.layers[i])
-                print(m)
                 if m is None:
                     m = self.layers[i]
                 else:

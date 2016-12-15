@@ -90,6 +90,9 @@ class ZXNode:
     def set_function_red(self):
         self.function = ZXNode.Function_Set.R
 
+    def set_function(self, new_function):
+        self.function = new_function
+
     def set_phase(self, new_phase):
         self.phase = new_phase
 

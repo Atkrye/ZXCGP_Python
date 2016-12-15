@@ -56,6 +56,53 @@ class ZX_CGP:
 
             self.grid.append(outputs)
 
+        def copy(self):
+            new = ZX_CGP(self.i,self.n,self.m,self.o,self.a,self.r,self.c)
+
+            #Copy each input
+            for input in range(self.i):
+                source_node = self.get_node(0, input)
+                target_node = new.get_node(0, input)
+
+                #Copy
+                self.copy_node(source_node, target_node)
+
+            # Copy each node
+            for x in range(self.n):
+                for y in range(self.m):
+                    source_node = self.get_node(x + 1, y)
+                    target_node = new.get_node(x + 1, y)
+
+                    #Copy
+                    self.copy_node(source_node, target_node)
+
+            # Copy each output
+            for output in range(self.o):
+                source_node = self.get_node(self.n + 1, output)
+                target_node = new.get_node(self.n + 1, output)
+
+                # Copy
+                self.copy_node(source_node, target_node)
+
+            new.active_pass()
+            return new
+
+        def copy_node(self, source, target):
+            #Copy function
+            target.set_function(source.get_function())
+            #Copy phase
+            target.set_phase(source.get_phase())
+            #Copy inputs
+            for i in range(target.get_inputs_size()):
+                target.set_input(i, self.copy_edge_pointer(source.get_input(i)))
+            #Copy outputs
+            for o in range(target.get_outputs_size()):
+                target.set_output(o, self.copy_edge_pointer(source.get_output(o)))
+
+        def copy_edge_pointer(self, e):
+            if e == None:
+                return None
+            return EPointer(e.get_x(), e.get_y(), e.get_z())
         def __str__(self):
             ret = ""
             for i in range(len(self.grid)):
@@ -63,8 +110,18 @@ class ZX_CGP:
                     ret = ret + str(self.grid[i][j]) + "\n"
             return ret
 
+        #Method to count number of inactive inputs in the system. This is an important notion for training a system to be a function of
+        #Its inputs
+        def count_inactive_inputs(self):
+            count = 0.0
+            for inp in range(self.i):
+                if not self.get_node(0, inp).get_active():
+                    count += 1.0
+            return count
+
         #Mutate the grid a certain number of times
         def mutate(self, num_mutations, phase_variance, phase_reset_granularity, disconnect_rate):
+            self.changed = False
             for mut in range(num_mutations):
                 #Keep retrying until mutation is successful
                 success = False
@@ -138,6 +195,7 @@ class ZX_CGP:
             if mutation_node.get_active():
                 self.changed = True
 
+
         #Method mutates phase for a specific node
         def mutate_phase(self, mutation_node, phase_variance):
             #Phase mutation is phase + gaussian(0, variance)
@@ -158,8 +216,11 @@ class ZX_CGP:
 
             #Disconnect case - disconnect the input according to disconnect)rate
             if random.random() < disconnect_rate:
-                        mutation_node.set_input(input, None)
-                        if mutation_node.get_active():
+                        inp = mutation_node.get_input(input)
+                        if inp is not None:
+                            mutation_node.set_input(input, None)
+                            self.get_node(inp.get_x(), inp.get_y()).set_output(inp.get_z(), None)
+                        if mutation_node.get_active() and inp is not None:
                             self.changed = True
                         else:
                             self.changed = False
@@ -181,11 +242,11 @@ class ZX_CGP:
             #Store the old edges in case we have to undo the mutation
             old_edge_source = new_input.get_output(output)
             mutant_edge_target = mutation_node.get_input(input)
+            #If there was an edge already connected to this slot delete it in its source
             if old_edge_source is not None:
-                #If there was an edge already connected to this slot delete it in its source
                 self.get_node(old_edge_source.get_x(), old_edge_source.get_y()).set_input(old_edge_source.get_z(), None)
+            #If there was a node that the mutated edge was connected to, delete it in its target
             if mutant_edge_target is not None:
-                #If there was a node that the mutated edge was connected to, delete it in its target
                 self.get_node(mutant_edge_target.get_x(), mutant_edge_target.get_y()).set_output(mutant_edge_target.get_z(), None)
             #Set new input into input slot
             mutation_node.set_input(input, EPointer(x, y, output))
@@ -194,7 +255,6 @@ class ZX_CGP:
 
             #Check if the new graph has unreasonable complexity
             if not self.check_complexity():
-                print("Complexity fail!")
                 #Complexity of the new circuit is too high. The executed mutation is undone
                 #Replace the old connections
                 if old_edge_source is not None:
@@ -202,7 +262,7 @@ class ZX_CGP:
                 if mutant_edge_target is not None:
                     self.get_node(mutant_edge_target.get_x(), mutant_edge_target.get_y()).set_output(mutant_edge_target.get_z(), EPointer(mutation_node.get_x(), mutation_node.get_y(), input))
                 new_input.set_output(output, old_edge_source)
-                mutation_node.set_input(input, None)
+                mutation_node.set_input(input, mutant_edge_target)
                 return False
             else:
                 #Check if mutated node is active or if the old connection is active to check if the phenotype has changed
@@ -323,14 +383,11 @@ class ZX_CGP:
                 #Go through each hidden node in this layer
                 for j in range(self.m):
                     #Get jth corresponding node
-                    print(layer_index)
-                    print(j)
                     node = self.get_node(layer_index, j)
 
                     found_node = True
                     #A node is only relevant if its has already been tagged active
                     if node.get_active():
-                        print(str(layer_index) + "," + str(j) + " active")
                         inputs = 0
                         outputs = 0
                         #Try to find some edge connecting to this node by searching over all unresolved edges. It is possible for a node to be active with no active inputs
@@ -399,7 +456,7 @@ class ZX_CGP:
 
                     if len(unresolved_inputs) > 0:
                         #Close, adding a newly generated connection matrix (that reorders qubits so that they are passed from correct output to correct input
-                        qs.close_layer_with_connection_matrix(ZX_CGP.calculate_connection_matrix(unresolved_inputs, resolved_inputs))
+                        qs.close_layer_with_connection_matrix(self.calculate_connection_matrix(unresolved_inputs, resolved_inputs))
                     else:
                         qs.close_layer()
 
@@ -418,8 +475,6 @@ class ZX_CGP:
             for j in range(self.o):
                 # Get jth corresponding node
                 node = self.get_node(self.n + 1, j)
-                print(node.get_x())
-                print(node.get_y())
 
                 found_node = True
                 inputs = 0
@@ -444,10 +499,8 @@ class ZX_CGP:
 
                 # We know now the complexity of the node, so can build a matrix representation and add it to the system
                 qs.add_operator(node.calculate_operator(inputs, outputs))
-                print("Output op " + str(j))
-                print(node.calculate_operator(inputs,outputs))
             if len(unresolved_inputs) != 0:
-                qs.close_layer_with_connection_matrix(ZX_CGP.calculate_connection_matrix(unresolved_inputs, resolved_inputs))
+                qs.close_layer_with_connection_matrix(self.calculate_connection_matrix(unresolved_inputs, resolved_inputs))
             else:
                 qs.close_layer()
 
@@ -523,11 +576,11 @@ class ZX_CGP:
 
         #Takes two lists, in and out, which are assumed to be two orderings on the same set of EdgePointers
         #Returns a connection matrix that maps each qubit state to its transformed state to provide the implied set of swaps
-        @staticmethod
-        def calculate_connection_matrix(inE, outE):
+        def calculate_connection_matrix(self, inE, outE):
             if len(inE) != len(outE):
                 #Lists should be equal size, else the connection matrix is incorrect
                 print("Warning! generating connection matrix of mismatched size:" + str(inE) + " vs. " + str(outE))
+                print(self)
             size = int(math.pow(2, len(inE)))
 
             #Initiate connection matrix as zeros
@@ -550,6 +603,7 @@ class ZX_CGP:
                         if found:
                             #Second match! Provided inputs are flawed
                             print("Warning! the provided input, " + str(un) + ", was found twice or more in the output.")
+                            print(self)
                         else:
                             bittrans[i] = j
                             found = True
@@ -631,7 +685,6 @@ inE = [EPointer(0,0,1),EPointer(0,0,0),EPointer(0,0,3)]
 outE = [EPointer(0,0,3),EPointer(0,0,0),EPointer(0,0,1)]
 #print(ZX_CGP.calculate_connection_matrix(inE, outE))
 
-print(zx)
-q = zx.generate_qsystem()
-print("Matrix")
-print(zx.generate_qsystem().get_compiled_version().get_layer(0))
+#q = zx.generate_qsystem()
+#print("Matrix")
+#print(zx.generate_qsystem().get_compiled_version().get_layer(0))

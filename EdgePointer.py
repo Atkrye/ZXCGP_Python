@@ -19,3 +19,4 @@ class EPointer:
 
     def __str__(self):
         return str(self.x) + ":" + str(self.y) + " - " + str(self.z)
+

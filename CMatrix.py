@@ -1,4 +1,5 @@
 import math
+import cmath
 #Class for defining Complex Matrices
 class CMatrix:
     #Parameter is raw 2D array of Complex values
@@ -82,8 +83,35 @@ class CMatrix:
     def __truediv__(self,other):
         return self.tensor(other)
 
+    #Returns normalized form of the matrix
+    def normalize(self):
+        raw_data = self.get_raw_data()
+        new_data = [[0 + 0j for y in range(len(raw_data[0]))] for x in range(len(raw_data))]
+        sum = 0 + 0j
+        for i in range(len(raw_data)):
+            for j in range(len(raw_data[i])):
+                sum += raw_data[i][j] * raw_data[i][j]
+        sq_sum = cmath.sqrt(sum)
+        for i in range(len(raw_data)):
+            for j in range(len(raw_data[i])):
+                if sq_sum != 0:
+                    new_data[i][j] = raw_data[i][j] / sq_sum
+        return CMatrix(new_data)
+
+    #Returns the realized square root of the sum of the matrix
+    def size(self):
+        raw_data = self.get_raw_data()
+        sum = 0 + 0j
+        for i in range(len(raw_data)):
+            for j in range(len(raw_data[i])):
+                sum += raw_data[i][j] * raw_data[i][j]
+        sq_sum = cmath.sqrt(sum)
+        return math.sqrt((sq_sum.real * sq_sum.real) + (sq_sum.imag * sq_sum.imag))
+
+
+a = CMatrix([[0.707 + 0j,0.707 + 0j,0 + 0j,0 + 0j]])
 w = CMatrix([[1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j]])
 h = CMatrix([[math.sqrt(1 / 2) + 0j,math.sqrt(1 / 2) + 0j],[math.sqrt(1 / 2) + 0j, -(math.sqrt(1 / 2)) + 0j]])
 CNOT = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j]])
-
+#print(a.size())
 #print((h / w / w) * (CNOT / w) * (w / CNOT) * (w / h / w))

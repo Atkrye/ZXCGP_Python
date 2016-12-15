@@ -56,6 +56,11 @@ class QState:
     def apply_operator(self, op_matrix):
         return QState((op_matrix * self.state_data).get_raw_data()[0])
 
+    def normalize(self):
+        self.state_data = self.state_data.normalize()
+
+    def __sub__(self, other):
+        return QState((self.state_data - other.state_data).get_raw_data()[0])
 
 state = QState([math.sqrt(1/4) + 0j, 0 + 0j, 0 + 0j, 0 + 0j,math.sqrt(3/4) + 0j, 0 + 0j,0 + 0j, 0 + 0j])
 
