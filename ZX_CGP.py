@@ -293,7 +293,6 @@ class ZX_CGP:
             l = self.n + 1
             #Iterate from back to front, layer by layer, removing nodes that are present from the active list and adding their inputs
             while l > 0:
-                l = l - 1
                 active_nodes = []
                 new_active = []
                 #Check every currently considered node to see if it is in this layer
@@ -330,6 +329,7 @@ class ZX_CGP:
                 #Check complexity of the next active list
                 if len(new_active) > self.c:
                     return False
+                l = l - 1
             return True
 
         #Builds a matrix equivalent of the zx graph expressed in the phenotype

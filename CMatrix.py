@@ -83,15 +83,15 @@ class CMatrix:
     def __truediv__(self,other):
         return self.tensor(other)
 
-    #Returns normalized form of the matrix
+    #Returns a quantum normalization of the matrix e.g. one that has a probability sum of 1
     def normalize(self):
         raw_data = self.get_raw_data()
         new_data = [[0 + 0j for y in range(len(raw_data[0]))] for x in range(len(raw_data))]
-        sum = 0 + 0j
+        sum = 0 
         for i in range(len(raw_data)):
             for j in range(len(raw_data[i])):
-                sum += raw_data[i][j] * raw_data[i][j]
-        sq_sum = cmath.sqrt(sum)
+                sum += ((raw_data[i][j].real * raw_data[i][j].real) + (raw_data[i][j].imag * raw_data[i][j].imag))
+        sq_sum = math.sqrt(sum)
         for i in range(len(raw_data)):
             for j in range(len(raw_data[i])):
                 if sq_sum != 0:

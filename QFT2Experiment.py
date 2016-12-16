@@ -3,7 +3,6 @@
 
 from ZX_CGP import *
 
-
 #Define population size
 popsize = 5
 #Define search width
@@ -15,23 +14,23 @@ i = 2
 #QFT2 is 2 outputs
 o = 2
 #Define phase reset granularity, the degree to which a node's phase can be reset between 0 and 2pi
-k = 1
+k = 2
 #Mean mutations
 uM = 5
 #Variance in mutations
-vM = 3
+vM = 5
 #Phase variance; phase is changed on average by 0.5
-p = 1.0
+p = 2.0
 #Node arity (in)
 a = 2
 #Node arity (out)
-r = 4
+r = 5
 #Max complexity
 c = 3
 #Edge disconnect rate
-d = 0.1
+d = 0.4
 #Phase reset rate
-pr = 0.5
+pr = 0.4
 
 #Max runs
 max_runs = 100000
@@ -46,7 +45,7 @@ population = [ZX_CGP(i,n,m,o,a,r,c)for x in range(popsize)]
 print("Building population...")
 #Randomize over 10000 mutations. Since each mutation has a reverse this is effectively shuffling
 for ind in population:
-    ind.mutate(10000, p, k, d, pr)
+    ind.mutate(1000, p, k, d, pr)
 
 print("Population built.")
 
@@ -67,11 +66,7 @@ checks_inputs = []
 checks_outputs = []
 bp = QSystem()
 bp.new_layer()
-bp.add_operator(CMatrix([[(1 / math.sqrt(2)) + 0j, (1 / math.sqrt(2)) + 0j], [(1 / math.sqrt(2)) + 0j, (-1 / math.sqrt(2)) + 0j]]))
-bp.add_operator(CMatrix([[1 + 0j, 0j],[0j, 1 + 0j]]))
-bp.close_layer()
-bp.new_layer()
-bp.add_operator(CMatrix([[1 + 0j, 0j, 0j, 0j],[0j, 1 + 0j, 0j, 0j],[0j,0j,0j,1 + 0j],[0j,0j,1 + 0j, 0j]]))
+bp.add_operator(QSystem.generate_qft(2))
 bp.close_layer()
 bp.compile()
 for check in range(checks):
@@ -89,9 +84,6 @@ for check in range(checks):
     # Build superstate of qubits
     input = QState([zz, zo, oz, oo])
     output = bp.apply(input)
-    output.normalize()
-    print("Input :\n" + str(input))
-    print("Expects output :\n" + str(output))
     checks_inputs.append(input)
     checks_outputs.append(output)
 
@@ -102,14 +94,7 @@ print("Evaluating IO Parents on ideal solution...")
 #Evaluate test set on human solution
 bp_zx = QSystem()
 bp_zx.new_layer()
-bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
-bp_zx.add_operator(ZXNode.calculate_general_green(1, 1, 0.0))
-bp_zx.new_layer()
-bp_zx.add_operator(ZXNode.calculate_general_green(1, 2, 0.0))
-bp_zx.add_operator(ZXNode.calculate_general_green(1, 1, 0.0))
-bp_zx.new_layer()
-bp_zx.add_operator(ZXNode.calculate_general_green(1, 1, 0.0))
-bp_zx.add_operator(ZXNode.calculate_general_red(2, 1, 0.0))
+bp.add_operator(QSystem.generate_qft(2))
 bp_zx.close_layer()
 bp_zx.compile()
 error = 0.0
@@ -117,8 +102,12 @@ for check in range(checks):
     input = checks_inputs[check]
     output = checks_outputs[check]
     # Apply the individual to the input
-    real_output = bp_zx.apply(input)
+    real_output = bp.apply(input)
     real_output.normalize()
+    print("Input: \n" + str(input))
+    print("Expects output: \n" + str(output))
+    print("Generated: " + str(real_output))
+    print("Error: " + str((real_output - output).state_data.size()))
 
     # Work out the error
     error += (real_output - output).state_data.size()
@@ -180,8 +169,8 @@ while gen < max_runs and not perfect:
     winners = []
     winner_count = 0
     for i in range(popsize):
-        #Scores within 0.0001 are allowed for neutral drift
-        if best - scores[i] < 0.0001:
+        #Scores within 0.001 are allowed for neutral drift
+        if (best - scores[i] < 0.001 and not perfect) or scores[i] > target:
             winners.append(i)
             winner_count += 1
     winner = winners[random.randint(0, winner_count - 1)]

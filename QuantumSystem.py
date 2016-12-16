@@ -1,6 +1,7 @@
 from CMatrix import CMatrix
 from QuantumState import QState
 import math
+import cmath
 #Class for building and using a Quantum System made of CMatrix operators and basis measurement layers
 class QSystem:
 
@@ -111,6 +112,13 @@ class QSystem:
                     current_state = current_state.apply_operator(current_layer)
             return current_state
 
+    @staticmethod
+    def generate_qft(qbits):
+        states = int(math.pow(2, qbits))
+        op = [[(1.0 / math.sqrt(states)) * cmath.exp(x * y * math.pi * 2 * 1j  / states)   for x in range(states)] for y in range(states)]
+        return CMatrix(op)
+
+print(QSystem.generate_qft(2))
 # CNOT = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j]])
 # CZ = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, -1 + 0j]])
 # SWAP = CMatrix([[1 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 1 + 0j, 0 + 0j],[0 + 0j, 1 + 0j, 0 + 0j, 0 + 0j],[0 + 0j, 0 + 0j, 0 + 0j, 1 + 0j]])
