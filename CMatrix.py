@@ -101,12 +101,12 @@ class CMatrix:
     #Returns the realized square root of the sum of the matrix
     def size(self):
         raw_data = self.get_raw_data()
-        sum = 0 + 0j
+        sum = 0.0
         for i in range(len(raw_data)):
             for j in range(len(raw_data[i])):
-                sum += raw_data[i][j] * raw_data[i][j]
-        sq_sum = cmath.sqrt(sum)
-        return math.sqrt((sq_sum.real * sq_sum.real) + (sq_sum.imag * sq_sum.imag))
+                sum += (raw_data[i][j].real * raw_data[i][j].real) + (raw_data[i][j].imag * raw_data[i][j].imag)
+        sq_sum = math.sqrt(sum)
+        return sq_sum
 
 
 a = CMatrix([[0.707 + 0j,0.707 + 0j,0 + 0j,0 + 0j]])

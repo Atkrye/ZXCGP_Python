@@ -6,15 +6,15 @@ from ZX_CGP import *
 #Define population size
 popsize = 5
 #Define search width
-n = 5
+n = 3
 #Define search height
-m = 10
+m = 3
 #CNOT is 2 inputs
 i = 2
 #CNOT is 2 outputs
 o = 2
 #Define phase reset granularity, the degree to which a node's phase can be reset between 0 and 2pi
-k = 16
+k = 4
 #Mean mutations
 uM = 3
 #Variance in mutations
@@ -22,17 +22,18 @@ vM = 2
 #Phase variance; phase is changed on average by 0.5
 p = 1.0
 #Node arity (in)
-a = 3
+a = 2
 #Node arity (out)
-r = 3
+r = 4
 #Max complexity
 c = 3
 #Edge disconnect rate
 d = 0.1
 #Phase reset rate
+pr = 0.3
 
 #Max runs
-max_runs = 2000
+max_runs = 200000
 #Number of checks on fitness function
 checks = 50
 #Target score
@@ -44,7 +45,7 @@ population = [ZX_CGP(i,n,m,o,a,r,c)for x in range(popsize)]
 print("Building population...")
 #Randomize over 10000 mutations. Since each mutation has a reverse this is effectively shuffling
 for ind in population:
-    ind.mutate(10000, p, k, d)
+    ind.mutate(10000, p, k, d, pr)
 
 print("Population built.")
 
@@ -196,7 +197,7 @@ while gen < max_runs and not perfect:
                 mutations = 1
 
             #Perform mutations
-            population[i].mutate(mutations, p, k, d)
+            population[i].mutate(mutations, p, k, d, pr)
             scores[i] = scores[winner]
         else:
             population[winner].changed = False
@@ -205,23 +206,28 @@ print("Finished")
 print("Executed in " + str(gen) + " executions")
 print("Perfect score found? " + str(perfect))
 print("Winning individual, score " + str(scores[winner]) + " : ")
-print(population[winner])
-print(population[winner].generate_qsystem().compiled_system.get_layer(0))
 error = 0.0
 q = population[winner].generate_qsystem().compiled_system
 for check in range(checks):
     input = checks_inputs[check]
+    print("Input \n"  + str(input))
     output = checks_outputs[check]
+    print("Expects \n"  + str(output))
     # Apply the individual to the input
     real_output = q.apply(input)
     real_output.normalize()
+    print("Calculates \n"  + str(real_output))
 
     # Work out the error
     error += (real_output - output).state_data.size()
+    print("Which has error matrix:\n" + str(real_output - output))
+    print("Giving error: " + str((real_output - output).state_data.size()))
 
 # Adjust the error
 error = error / float(checks)
 print("Final score: " + str(1.0 / (1.0 + error)))
+print(population[winner])
+print(population[winner].generate_qsystem().compiled_system.get_layer(0))
 
 
 

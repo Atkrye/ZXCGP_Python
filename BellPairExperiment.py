@@ -7,19 +7,19 @@ from ZX_CGP import *
 #Define population size
 popsize = 5
 #Define search width
-n = 5
+n = 3
 #Define search height
-m = 5
-#QFT2 is 2 inputs
+m = 3
+#CNOT is 2 inputs
 i = 2
-#QFT2 is 2 outputs
+#CNOT is 2 outputs
 o = 2
 #Define phase reset granularity, the degree to which a node's phase can be reset between 0 and 2pi
-k = 1
+k = 4
 #Mean mutations
-uM = 5
+uM = 3
 #Variance in mutations
-vM = 3
+vM = 2
 #Phase variance; phase is changed on average by 0.5
 p = 1.0
 #Node arity (in)
@@ -31,12 +31,12 @@ c = 3
 #Edge disconnect rate
 d = 0.1
 #Phase reset rate
-pr = 0.5
+pr = 0.3
 
 #Max runs
-max_runs = 100000
+max_runs = 200000
 #Number of checks on fitness function
-checks = 40
+checks = 50
 #Target score
 target = 0.999
 

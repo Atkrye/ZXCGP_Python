@@ -4,38 +4,38 @@
 from ZX_CGP import *
 
 #Define population size
-popsize = 5
+popsize = 100
 #Define search width
-n = 5
+n = 8
 #Define search height
-m = 5
-#QFT2 is 2 inputs
+m = 8
+#CNOT is 2 inputs
 i = 2
-#QFT2 is 2 outputs
+#CNOT is 2 outputs
 o = 2
 #Define phase reset granularity, the degree to which a node's phase can be reset between 0 and 2pi
-k = 2
+k = 8
 #Mean mutations
-uM = 5
+uM = 15ij
 #Variance in mutations
-vM = 5
+vM = 10
 #Phase variance; phase is changed on average by 0.5
-p = 2.0
+p = 1.0
 #Node arity (in)
 a = 2
 #Node arity (out)
-r = 5
+r = 6
 #Max complexity
-c = 3
+c = 5
 #Edge disconnect rate
-d = 0.4
+d = 0.2
 #Phase reset rate
-pr = 0.4
+pr = 0.3
 
 #Max runs
-max_runs = 100000
+max_runs = 200000
 #Number of checks on fitness function
-checks = 40
+checks = 50
 #Target score
 target = 0.999
 
@@ -44,8 +44,8 @@ population = [ZX_CGP(i,n,m,o,a,r,c)for x in range(popsize)]
 
 print("Building population...")
 #Randomize over 10000 mutations. Since each mutation has a reverse this is effectively shuffling
-for ind in population:
-    ind.mutate(1000, p, k, d, pr)
+#for ind in population:
+    #ind.mutate(1000, p, k, d, pr)
 
 print("Population built.")
 
@@ -94,7 +94,14 @@ print("Evaluating IO Parents on ideal solution...")
 #Evaluate test set on human solution
 bp_zx = QSystem()
 bp_zx.new_layer()
-bp.add_operator(QSystem.generate_qft(2))
+bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
+bp_zx.add_operator(ZXNode.calculate_general_green(1,1,0.0))
+bp_zx.close_layer()
+bp_zx.new_layer()
+bp_zx.add_operator((ZXNode.generate_controlled(1,ZXNode.calculate_general_green(1,1,0.5 * math.pi))))
+bp_zx.close_layer()
+bp_zx.add_operator(ZXNode.calculate_general_green(1,1,0.0))
+bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
 bp_zx.close_layer()
 bp_zx.compile()
 error = 0.0
@@ -164,17 +171,23 @@ while gen < max_runs and not perfect:
 
         if scores[i] > best:
             best = scores[i]
-            
+
     #Work out the winner
     winners = []
     winner_count = 0
     for i in range(popsize):
         #Scores within 0.001 are allowed for neutral drift
-        if (best - scores[i] < 0.001 and not perfect) or scores[i] > target:
+        if ((best - scores[i] < 0.0008) and not perfect) or scores[i] > target:
             winners.append(i)
             winner_count += 1
-    winner = winners[random.randint(0, winner_count - 1)]
 
+    #Give preference to neutral drift
+    old_winner = winner
+    while old_winner == winner and len(winners) > 1:
+        winner = winners[random.randint(0, winner_count - 1)]
+        #Might have a large jump meaning old winner is lost
+    if len(winners) == 1:
+        winner = winners[0]
     if best > target:
         perfect = True
 
@@ -198,7 +211,10 @@ while gen < max_runs and not perfect:
             population[i].mutate(mutations, p, k, d, pr)
             scores[i] = scores[winner]
         else:
-            population[winner].changed = False
+            population[i].changed = False
+            print("Winner score: ")
+            print(scores[winner])
+
 
 print("Finished")
 print("Executed in " + str(gen) + " executions")

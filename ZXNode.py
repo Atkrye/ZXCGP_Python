@@ -19,6 +19,7 @@ class ZXNode:
         self.x = x
         self.y = y
         self.active = False
+        self.controlled = False
 
     def get_inputs_size(self):
         return self.a
@@ -33,6 +34,11 @@ class ZXNode:
                 count += 1
         return count
 
+    def get_controlled(self):
+        return self.controlled
+
+    def set_controlled(self, c):
+        self.controlled = c
 
     def __str__(self):
         rep = "(" + str(self.x) + "," + str(self.y) + "): " + self.function + " " + str(self.phase)
@@ -105,6 +111,10 @@ class ZXNode:
     #Calculates a Complex Matrix CMatrix (see CMatrix.py for usage) for a fixed number of inputs and outputs using the nodes current phase and function
     #See function specific methods calculate_green(i,o), calculate_red(i,o) and calculate_hadamard(i,o) for more details
     def calculate_operator(self, inputs, outputs):
+        #Controlled only matters if the node is 'square' with more than 1 qubit
+        if(self.controlled and inputs == outputs and inputs > 1):
+            #Generate a 1x1 matrix and place it in a controlled matrix
+            return ZXNode.generate_controlled(inputs - 1, self.calculate_operator(1, 1))
         if self.function is ZXNode.Function_Set.H:
             #Calculate Hadamard CMatrix
             return ZXNode.calculate_hadamard(inputs, outputs)
@@ -205,6 +215,18 @@ class ZXNode:
         green = ZXNode.calculate_general_green(inputs, outputs,phase)
         return outmatrix * green * inmatrix
 
+    @staticmethod
+    def generate_controlled(control_bits, controlled_matrix):
+        size = int(math.pow(2, control_bits + 1))
+        M = [[0 + 0j for x in range(size)] for y in range(size)]
+        #Set all diagnol bits to 1
+        for i in range(size - 2):
+            M[i][i] = 1 + 0j
+        M[size - 2][size - 2] = controlled_matrix.get_raw_data()[0][0]
+        M[size - 2][size - 1] = controlled_matrix.get_raw_data()[0][1]
+        M[size - 1][size - 2] = controlled_matrix.get_raw_data()[1][0]
+        M[size - 1][size - 1] = controlled_matrix.get_raw_data()[1][1]
+        return CMatrix(M)
 
 
 inp = int(1)
@@ -213,3 +235,14 @@ phase = 0.0
 #print(ZXNode.calculate_hadamard(inp,out))
 #print(ZXNode.calculate_general_green(0,2,math.pi / 4))
 #print(ZXNode.calculate_general_green(2,0,math.pi / 4))
+a = ZXNode.calculate_general_green(1, 2, 0.0)
+b = ZXNode.calculate_general_green(2, 1, 0.0)
+w = ZXNode.calculate_general_green(1, 1, 0.0)
+print(a/w)
+a = ZXNode(0,0,3,3)
+a.set_function_green()
+a.set_controlled(True)
+a.set_phase(math.pi / 2)
+print(a.calculate_operator(2, 2))
+print((ZXNode.generate_hadamard_matrix() / ZXNode.calculate_general_green(1,1,0.0)))
+print((ZXNode.calculate_general_green(1,1,0.0) / ZXNode.generate_hadamard_matrix()) * a.calculate_operator(2, 2) * (ZXNode.generate_hadamard_matrix() / ZXNode.calculate_general_green(1,1,0.0)))

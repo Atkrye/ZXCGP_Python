@@ -190,6 +190,12 @@ class ZX_CGP:
             if random.random() < phase_reset_rate and phase_reset_granularity is not -1:
                 mutation_node.set_phase(random.randint(0, int(phase_reset_granularity)) * 2.0 * math.pi / float(phase_reset_granularity))
 
+            #Decide whether the new function is controlled
+            if bool(random.getrandbits(1)):
+                mutation_node.set_controlled(True)
+            else:
+                mutation_node.set_controlled(False)
+
             #Check if we have updated the active graph
             if mutation_node.get_active():
                 self.changed = True
