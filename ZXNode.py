@@ -44,6 +44,8 @@ class ZXNode:
         rep = "(" + str(self.x) + "," + str(self.y) + "): " + self.function + " " + str(self.phase)
         if self.active:
             rep += " ACTIVE"
+        if self.controlled:
+                rep += " C-GATE"
         rep += "\nInputs: "
 
         for i in range(len(self.inputs)):
@@ -112,7 +114,7 @@ class ZXNode:
     #See function specific methods calculate_green(i,o), calculate_red(i,o) and calculate_hadamard(i,o) for more details
     def calculate_operator(self, inputs, outputs):
         #Controlled only matters if the node is 'square' with more than 1 qubit
-        if(self.controlled and inputs == outputs and inputs > 1):
+        if(self.controlled and inputs == outputs and inputs != 1):
             #Generate a 1x1 matrix and place it in a controlled matrix
             return ZXNode.generate_controlled(inputs - 1, self.calculate_operator(1, 1))
         if self.function is ZXNode.Function_Set.H:

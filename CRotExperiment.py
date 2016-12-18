@@ -1,4 +1,4 @@
-#Raw experiment code, written to serve as a basis for parameterized experiment code. Aim is to learn simple BP Generator
+#Raw experiment code, written to serve as a basis for parameterized experiment code. Aim is to learn simple CNOT
 #Function as a ZX Graph
 
 from ZX_CGP import *
@@ -6,7 +6,7 @@ from ZX_CGP import *
 #Define population size
 popsize = 5
 #Define search width
-n = 5
+n = 3
 #Define search height
 m = 3
 #CNOT is 2 inputs
@@ -16,15 +16,15 @@ o = 2
 #Define phase reset granularity, the degree to which a node's phase can be reset between 0 and 2pi
 k = 8
 #Mean mutations
-uM = 8
+uM = 10
 #Variance in mutations
-vM = 5
+vM = 10
 #Phase variance; phase is changed on average by 0.5
-p = 0.5
+p = 1.0
 #Node arity (in)
-a = 2
+a = 4
 #Node arity (out)
-r = 4
+r = 8
 #Max complexity
 c = 3
 #Edge disconnect rate
@@ -45,7 +45,7 @@ population = [ZX_CGP(i,n,m,o,a,r,c)for x in range(popsize)]
 print("Building population...")
 #Randomize over 10000 mutations. Since each mutation has a reverse this is effectively shuffling
 for ind in population:
-    ind.mutate(1000, p, k, d, pr)
+    ind.mutate(10000, p, k, d, pr)
 
 print("Population built.")
 
@@ -64,11 +64,11 @@ print("Building IO pairings...")
 #Generate IO pairs
 checks_inputs = []
 checks_outputs = []
-bp = QSystem()
-bp.new_layer()
-bp.add_operator(QSystem.generate_qft(2))
-bp.close_layer()
-bp.compile()
+cnot = QSystem()
+cnot.new_layer()
+cnot.add_operator(CMatrix([[1 + 0j, 0j, 0j, 0j],[0j, 1 + 0j, 0j, 0j],[0j,0j,1 + 0j,0j],[0j,0j,0j, 1j]]))
+cnot.close_layer()
+cnot.compile()
 for check in range(checks):
     # Get 2 random phases
     qubitA = random.random() * math.pi * 2
@@ -83,7 +83,9 @@ for check in range(checks):
     oo = aO * bO
     # Build superstate of qubits
     input = QState([zz, zo, oz, oo])
-    output = bp.apply(input)
+    output = cnot.apply(input)
+    print("Input :\n" + str(input))
+    print("Expects output :\n" + str(output))
     checks_inputs.append(input)
     checks_outputs.append(output)
 
@@ -92,29 +94,18 @@ print("IO Pairings built.")
 print("Evaluating IO Parents on ideal solution...")
 
 #Evaluate test set on human solution
-bp_zx = QSystem()
-bp_zx.new_layer()
-bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
-bp_zx.add_operator(ZXNode.calculate_general_green(1,1,0.0))
-bp_zx.close_layer()
-bp_zx.new_layer()
-bp_zx.add_operator((ZXNode.generate_controlled(1,ZXNode.calculate_general_green(1,1,0.5 * math.pi))))
-bp_zx.close_layer()
-bp_zx.add_operator(ZXNode.calculate_general_green(1,1,0.0))
-bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
-bp_zx.close_layer()
-bp_zx.compile()
+cnot_zx = QSystem()
+cnot_zx.new_layer()
+cnot_zx.add_operator((ZXNode.generate_controlled(1,ZXNode.calculate_general_green(1,1,0.5 * math.pi))))
+cnot_zx.close_layer()
+cnot_zx.compile()
 error = 0.0
 for check in range(checks):
     input = checks_inputs[check]
     output = checks_outputs[check]
     # Apply the individual to the input
-    real_output = bp.apply(input)
+    real_output = cnot_zx.apply(input)
     real_output.normalize()
-    print("Input: \n" + str(input))
-    print("Expects output: \n" + str(output))
-    print("Generated: " + str(real_output))
-    print("Error: " + str((real_output - output).state_data.size()))
 
     # Work out the error
     error += (real_output - output).state_data.size()
@@ -171,23 +162,17 @@ while gen < max_runs and not perfect:
 
         if scores[i] > best:
             best = scores[i]
-
+            
     #Work out the winner
     winners = []
     winner_count = 0
     for i in range(popsize):
-        #Scores within 0.001 are allowed for neutral drift
-        if ((best - scores[i] < 0.002) and not perfect) or scores[i] > target:
+        #Scores within 0.0001 are allowed for neutral drift
+        if best - scores[i] < 0.0001:
             winners.append(i)
             winner_count += 1
+    winner = winners[random.randint(0, winner_count - 1)]
 
-    #Give preference to neutral drift
-    old_winner = winner
-    while old_winner == winner and len(winners) > 1:
-        winner = winners[random.randint(0, winner_count - 1)]
-        #Might have a large jump meaning old winner is lost
-    if len(winners) == 1:
-        winner = winners[0]
     if best > target:
         perfect = True
 
@@ -211,30 +196,35 @@ while gen < max_runs and not perfect:
             population[i].mutate(mutations, p, k, d, pr)
             scores[i] = scores[winner]
         else:
-            population[i].changed = False
-
+            population[winner].changed = False
+            print(population[winner])
 
 print("Finished")
 print("Executed in " + str(gen) + " executions")
 print("Perfect score found? " + str(perfect))
 print("Winning individual, score " + str(scores[winner]) + " : ")
-print(population[winner])
-print(population[winner].generate_qsystem().compiled_system.get_layer(0))
 error = 0.0
 q = population[winner].generate_qsystem().compiled_system
 for check in range(checks):
     input = checks_inputs[check]
+    print("Input \n"  + str(input))
     output = checks_outputs[check]
+    print("Expects \n"  + str(output))
     # Apply the individual to the input
     real_output = q.apply(input)
     real_output.normalize()
+    print("Calculates \n"  + str(real_output))
 
     # Work out the error
     error += (real_output - output).state_data.size()
+    print("Which has error matrix:\n" + str(real_output - output))
+    print("Giving error: " + str((real_output - output).state_data.size()))
 
 # Adjust the error
 error = error / float(checks)
 print("Final score: " + str(1.0 / (1.0 + error)))
+print(population[winner])
+print(population[winner].generate_qsystem().compiled_system.get_layer(0))
 
 
 

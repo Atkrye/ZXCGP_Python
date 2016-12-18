@@ -92,6 +92,8 @@ class ZX_CGP:
             target.set_function(source.get_function())
             #Copy phase
             target.set_phase(source.get_phase())
+            #Copy control
+            target.set_controlled(source.get_controlled())
             #Copy inputs
             for i in range(target.get_inputs_size()):
                 target.set_input(i, self.copy_edge_pointer(source.get_input(i)))
@@ -129,7 +131,7 @@ class ZX_CGP:
                 #Keep retrying until mutation is successful
                 success = False
                 while not success:
-                    #Pick a node. Can be output or hidden, not input
+                    #Pick a node. Can be hidden or output, not input (which is linear)
                     y = 1 + random.randint(0, self.n)
                     x = random.randint(0, len(self.grid[y]) - 1)
                     success = self.mutate_node(self.grid[y][x], phase_variance, phase_reset_granularity, disconnect_rate, phase_reset_rate)
@@ -138,6 +140,9 @@ class ZX_CGP:
         def mutate_node(self, mutation_node, phase_variance, phase_reset_granularity, disconnect_rate, phase_reset_rate):
             #Uniformally, choose between function mutation, edge mutation and phase mutation
             prob = random.random()
+            #Outputs can only have edge mutations, so will always act as wires (green with 0 phase)
+            if mutation_node.get_x() == self.n + 1:
+                return self.mutate_edge(mutation_node, disconnect_rate)
             if prob < 1 / 3:
                 #Mutate function
                 self.mutate_function(mutation_node, phase_reset_rate, phase_reset_granularity)
@@ -205,10 +210,16 @@ class ZX_CGP:
         def mutate_phase(self, mutation_node, phase_variance, phase_reset_rate, phase_reset_granularity):
             if random.random() < phase_reset_rate:
                     #Reset the phase according to the given granularity
-                    mutation_node.set_phase(random.randint(0, int(phase_reset_granularity)) * 2.0 * math.pi / float(phase_reset_granularity))
+                    factor = float(random.randint(0, int(phase_reset_granularity))) / phase_reset_granularity
+                    mutation_node.set_phase(math.pi * 2 * factor)
             else:
                     #Phase mutation is phase + gaussian(0, variance)
-                    mutation_node.set_phase(mutation_node.get_phase() + gauss(0.0, phase_variance))
+                    new_phase = mutation_node.get_phase() + gauss(0.0, phase_variance)
+                    while new_phase < 0:
+                        new_phase += (math.pi * 2.0)
+                    while new_phase > math.pi * 2.0:
+                        new_phase += -(math.pi * 2.0)
+                    mutation_node.set_phase(new_phase)
 
             #Check if we have updated the active graph. Hadamards do not use phase!
             if mutation_node.get_active() and mutation_node.get_function() is not ZXNode.Function_Set.H:

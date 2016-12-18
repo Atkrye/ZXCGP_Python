@@ -2,10 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="911bc4af-a71f-4591-b427-9eb7c8962ff5" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/BellPairExperiment.py" afterPath="$PROJECT_DIR$/BellPairExperiment.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/CMatrix.py" afterPath="$PROJECT_DIR$/CMatrix.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/CNOTExperiment.py" afterPath="$PROJECT_DIR$/CNOTExperiment.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/QFT2Experiment.py" afterPath="$PROJECT_DIR$/QFT2Experiment.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ZXNode.py" afterPath="$PROJECT_DIR$/ZXNode.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ZX_CGP.py" afterPath="$PROJECT_DIR$/ZX_CGP.py" />
@@ -75,21 +71,21 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="QFT2Experiment.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="QFT2Experiment.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/QFT2Experiment.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="178">
-              <caret line="18" column="9" lean-forward="false" selection-start-line="18" selection-start-column="9" selection-end-line="18" selection-end-column="9" />
+            <state relative-caret-position="220">
+              <caret line="60" column="0" lean-forward="true" selection-start-line="60" selection-start-column="0" selection-end-line="60" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="random.py" pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/random.py">
+      <file leaf-file-name="CRotExperiment.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/CRotExperiment.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="4642">
-              <caret line="217" column="0" lean-forward="false" selection-start-line="217" selection-start-column="0" selection-end-line="217" selection-end-column="0" />
+            <state relative-caret-position="194">
+              <caret line="23" column="16" lean-forward="false" selection-start-line="23" selection-start-column="16" selection-end-line="23" selection-end-column="16" />
               <folding />
             </state>
           </provider>
@@ -98,8 +94,8 @@
       <file leaf-file-name="ZXNode.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ZXNode.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="484">
-              <caret line="247" column="192" lean-forward="false" selection-start-line="247" selection-start-column="6" selection-end-line="247" selection-end-column="192" />
+            <state relative-caret-position="370">
+              <caret line="245" column="22" lean-forward="true" selection-start-line="245" selection-start-column="22" selection-end-line="245" selection-end-column="22" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -120,8 +116,8 @@
       <file leaf-file-name="ZX_CGP.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ZX_CGP.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="272">
-              <caret line="207" column="90" lean-forward="false" selection-start-line="207" selection-start-column="90" selection-end-line="207" selection-end-column="90" />
+            <state relative-caret-position="264">
+              <caret line="134" column="52" lean-forward="false" selection-start-line="134" selection-start-column="52" selection-end-line="134" selection-end-column="52" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -156,9 +152,13 @@
       <find>system change</find>
       <find>Output op</find>
       <find>calcu</find>
-      <find>mutate</find>
       <find>0.0</find>
       <find>winner</find>
+      <find>copy</find>
+      <find>mutate_phase</find>
+      <find>mutate_node</find>
+      <find>mutate</find>
+      <find>continu</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -177,9 +177,10 @@
         <option value="$PROJECT_DIR$/QuantumState.py" />
         <option value="$PROJECT_DIR$/CMatrix.py" />
         <option value="$PROJECT_DIR$/CNOTExperiment.py" />
-        <option value="$PROJECT_DIR$/ZXNode.py" />
         <option value="$PROJECT_DIR$/BellPairExperiment.py" />
+        <option value="$PROJECT_DIR$/ZXNode.py" />
         <option value="$PROJECT_DIR$/ZX_CGP.py" />
+        <option value="$PROJECT_DIR$/CRotExperiment.py" />
         <option value="$PROJECT_DIR$/QFT2Experiment.py" />
       </list>
     </option>
@@ -238,29 +239,15 @@
     </panes>
   </component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Tim\PycharmProjects\ZXCGP" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Tim\PycharmProjects\ZXCGP" />
       <recent name="C:\Users\Tim\PycharmProjects\ZXCGP\CGP" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.QFT2Experiment">
-    <configuration default="false" name="CMatrix" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="ZXCGP" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/CMatrix.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <method />
-    </configuration>
+  <component name="RunManager" selected="Python.CRotExperiment">
     <configuration default="false" name="CNOTExperiment" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -278,23 +265,6 @@
       <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
     </configuration>
-    <configuration default="false" name="BellPairExperiment" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="ZXCGP" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/BellPairExperiment.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <method />
-    </configuration>
     <configuration default="false" name="QFT2Experiment" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -308,6 +278,40 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="ZXCGP" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/QFT2Experiment.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="ZX_CGP" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="ZXCGP" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ZX_CGP.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="CRotExperiment" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="ZXCGP" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/CRotExperiment.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
@@ -464,19 +468,19 @@
       <method />
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="Python.CMatrix" />
-      <item index="1" class="java.lang.String" itemvalue="Python.CNOTExperiment" />
-      <item index="2" class="java.lang.String" itemvalue="Python.BellPairExperiment" />
-      <item index="3" class="java.lang.String" itemvalue="Python.QFT2Experiment" />
+      <item index="0" class="java.lang.String" itemvalue="Python.CNOTExperiment" />
+      <item index="1" class="java.lang.String" itemvalue="Python.QFT2Experiment" />
+      <item index="2" class="java.lang.String" itemvalue="Python.ZX_CGP" />
+      <item index="3" class="java.lang.String" itemvalue="Python.CRotExperiment" />
       <item index="4" class="java.lang.String" itemvalue="Python.ZXNode" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Python.QFT2Experiment" />
-        <item index="1" class="java.lang.String" itemvalue="Python.CNOTExperiment" />
-        <item index="2" class="java.lang.String" itemvalue="Python.BellPairExperiment" />
+        <item index="0" class="java.lang.String" itemvalue="Python.CRotExperiment" />
+        <item index="1" class="java.lang.String" itemvalue="Python.QFT2Experiment" />
+        <item index="2" class="java.lang.String" itemvalue="Python.ZX_CGP" />
         <item index="3" class="java.lang.String" itemvalue="Python.ZXNode" />
-        <item index="4" class="java.lang.String" itemvalue="Python.CMatrix" />
+        <item index="4" class="java.lang.String" itemvalue="Python.CNOTExperiment" />
       </list>
     </recent_temporary>
   </component>
@@ -495,7 +499,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-9" y="-9" width="1938" height="1048" extended-state="6" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1796875" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -792,22 +796,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/QuantumSystem.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="242">
-          <caret line="147" column="14" lean-forward="false" selection-start-line="147" selection-start-column="14" selection-end-line="147" selection-end-column="14" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/QuantumState.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/CMatrix.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="458">
@@ -826,16 +814,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ZX_CGP.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="207" column="90" lean-forward="false" selection-start-line="207" selection-start-column="90" selection-end-line="207" selection-end-column="90" />
-          <folding>
-            <element signature="e#0#20#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/CNOTExperiment.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="222">
@@ -844,20 +822,54 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/QuantumSystem.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="242">
+          <caret line="147" column="14" lean-forward="false" selection-start-line="147" selection-start-column="14" selection-end-line="147" selection-end-column="14" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/QuantumState.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/ZXNode.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="484">
-          <caret line="247" column="192" lean-forward="false" selection-start-line="247" selection-start-column="6" selection-end-line="247" selection-end-column="192" />
+        <state relative-caret-position="370">
+          <caret line="245" column="22" lean-forward="true" selection-start-line="245" selection-start-column="22" selection-end-line="245" selection-end-column="22" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/ZX_CGP.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="264">
+          <caret line="134" column="52" lean-forward="false" selection-start-line="134" selection-start-column="52" selection-end-line="134" selection-end-column="52" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/QFT2Experiment.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="178">
-          <caret line="18" column="9" lean-forward="false" selection-start-line="18" selection-start-column="9" selection-end-line="18" selection-end-column="9" />
+        <state relative-caret-position="220">
+          <caret line="60" column="0" lean-forward="true" selection-start-line="60" selection-start-column="0" selection-end-line="60" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/CRotExperiment.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="194">
+          <caret line="23" column="16" lean-forward="false" selection-start-line="23" selection-start-column="16" selection-end-line="23" selection-end-column="16" />
           <folding />
         </state>
       </provider>
