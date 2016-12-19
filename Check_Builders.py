@@ -251,6 +251,7 @@ class TP_Check(Check_Builder):
             print("Total probability: " + str(totalp))
             if totalp <= 0.0001:
                 expected_error = 1.0
+            print("Expected error: " + str(expected_error))
             #Ignore insignificant error e.g. caused by python math
             if expected_error > 0.000000001:
                 error += expected_error
