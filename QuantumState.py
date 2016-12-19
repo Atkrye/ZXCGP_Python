@@ -16,6 +16,9 @@ class QState:
     def get_raw_data(self):
         return self.state_data.get_raw_data()
 
+    def copy(self):
+        return QState(self.state_data.get_raw_data()[0])
+
     #Performs a basis measurement on a specified qubit
     def measure_qubit(self, qubit):
         state_data = self.get_raw_data()
@@ -45,13 +48,64 @@ class QState:
             #Qubit is measured as being in state 1
             state_zero = False
             mod = math.sqrt(one_total)
+
         new_data = [0 + 0j for x in range(len(state_data[0]))]
+        
+        if mod == 0:
+            return QState(new_data)
+
         for i in range(qubit_iterations):
             for j in range(qubit_flip):
                 if state_zero:
                     new_data[(i * qubit_flip) + j] = state_data[0][(i * qubit_flip) + j] / mod
             state_zero = not state_zero
         return QState(new_data)
+
+    #Instead of raw measurement, we measure for a specific value, returning the probability of that measurement
+    def measure_qubit_to_value(self, qubit, zero_value):
+        state_data = self.get_raw_data()
+        self_qubits = int(math.log(len(state_data[0]), 2))
+        qubit_flip = int(math.pow(2, self_qubits - (qubit + 1)))
+        qubit_iterations = int(math.pow(2, qubit + 1))
+        state_zero = True
+        zero_total = 0.0
+        one_total = 0.0
+        for i in range(qubit_iterations):
+            for j in range(qubit_flip):
+                val = state_data[0][(i * qubit_flip) + j]
+                new_val = (val.real * val.real) + (val.imag * val.imag)
+                if state_zero:
+                    zero_total += new_val
+                else:
+                    one_total += new_val
+            state_zero = not state_zero
+        prob_total = zero_total + one_total
+        prob = random.random() * prob_total
+        mod = 0
+        if zero_value:
+            #Qubit is measured as being in state 0
+            state_zero = True
+            mod = math.sqrt(zero_total)
+        else:
+            #Qubit is measured as being in state 1
+            state_zero = False
+            mod = math.sqrt(one_total)
+
+        new_data = [0 + 0j for x in range(len(state_data[0]))]
+        
+        if mod == 0:
+            return [QState(new_data), 0.0]
+
+        for i in range(qubit_iterations):
+            for j in range(qubit_flip):
+                if state_zero:
+                    new_data[(i * qubit_flip) + j] = state_data[0][(i * qubit_flip) + j] / mod
+            state_zero = not state_zero
+        if zero_value:
+            return [QState(new_data), zero_total / prob_total]
+        else:
+            return [QState(new_data), one_total / prob_total]
+        
 
     def apply_operator(self, op_matrix):
         return QState((op_matrix * self.state_data).get_raw_data()[0])

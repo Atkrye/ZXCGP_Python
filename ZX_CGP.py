@@ -105,6 +105,7 @@ class ZX_CGP:
             if e == None:
                 return None
             return EPointer(e.get_x(), e.get_y(), e.get_z())
+        
         def __str__(self):
             ret = ""
             for i in range(len(self.grid)):
@@ -136,6 +137,22 @@ class ZX_CGP:
                     x = random.randint(0, len(self.grid[y]) - 1)
                     success = self.mutate_node(self.grid[y][x], phase_variance, phase_reset_granularity, disconnect_rate, phase_reset_rate)
 
+        
+        #Mutate the grid a certain number of times using a weighted mutation distribution across [edge_change, edge_disconnect, function_change, phase_change, phase_reset]
+        def mutate_with_weights(self, num_mutations, phase_variance, phase_reset_granularity, mutation_weights):
+            self.changed = False
+            for mut in range(num_mutations):
+                #Once mutated, do an active pass. This is expensive and could be optimized, but relative to
+                #Quantum complexity this is arbitrary at higher numbers of qubits (max complexity)
+                self.active_pass()
+                #Keep retrying until mutation is successful
+                success = False
+                while not success:
+                    #Pick a node. Can be hidden or output, not input (which is linear)
+                    y = 1 + random.randint(0, self.n)
+                    x = random.randint(0, len(self.grid[y]) - 1)
+                    success = self.mutate_node_with_weights(self.grid[y][x], phase_variance, phase_reset_granularity, mutation_weights)
+
         #Function mutates a specific node
         def mutate_node(self, mutation_node, phase_variance, phase_reset_granularity, disconnect_rate, phase_reset_rate):
             #Uniformally, choose between function mutation, edge mutation and phase mutation
@@ -156,6 +173,52 @@ class ZX_CGP:
             else:
                 #Edge mutation. This may fail by creating a graph with too high complexity
                 return self.mutate_edge(mutation_node, disconnect_rate)
+        
+        #Function mutates a specific node
+        def mutate_node_with_weights(self, mutation_node, phase_variance, phase_reset_granularity, mutation_weights):
+            #Generate rng to sample weight distribution
+            prob = random.random()
+            #Outputs can only have edge mutations, so will always act as wires (green with 0 phase). Therefore we only choose between edge mutation and edge disconnection for outputs
+            if mutation_node.get_x() == self.n + 1:
+                sum_weights = mutation_weights[0] + mutation_weights[1]
+                if prob <= (float(mutation_weights[0]) / float(sum_weights)):
+                        #Edge mutation, disconnect rate = 0.0
+                        return self.mutate_edge(mutation_node, 0.0)
+                else:
+                        #Edge deletion, disconnect rate = 1.0
+                        return self.mutate_edge(mutation_node, 1.0)
+
+            #Calculate sum of weights
+            sum_weights = 0.0
+            for j in range(len(mutation_weights)):
+                    sum_weights += float(mutation_weights[j])
+
+            #First is edge change
+            if prob <= float(mutation_weights[0]) / sum_weights:
+                    #Mutate edge
+                    return self.mutate_edge(mutation_node, 0.0)
+            #Second is edge disconnect
+            elif prob <= float(mutation_weights[1]) / sum_weights:
+                    #Disconnect edge
+                    return self.mutate_edge(mutation_node, 1.0)
+            #Third is function change
+            elif prob <= float(mutation_weights[2]) / sum_weights:
+                    #Mutate function
+                    self.mutate_function(mutation_node, 0.0, phase_reset_granularity)
+                    #Function mutations cannot fail and do not change the active topology of the graph so cannot affect complexity.
+                    return True
+            #Fourth is phase change
+            elif prob <= float(mutation_weights[3]) / sum_weights:
+                    #Mutate phase
+                    self.mutate_phase(mutation_node, phase_variance, 0.0, phase_reset_granularity)
+                    #Phase mutations cannot fail and do not change the active topology of the graph so cannot affect complexity.
+                    return True
+            #Fifth is phase reset
+            else:
+                #Phase reset
+                self.mutate_phase(mutation_node, phase_variance, 1.0, phase_reset_granularity)
+                #Phase reset cant fail
+                return True
 
         #Method mutates the function of a specified node
         #Params are mutation_node, the node to mutate, and phase_reset_granularity; the degree to which phase
