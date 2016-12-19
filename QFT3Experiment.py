@@ -1,4 +1,4 @@
-#Raw experiment code, written to serve as a basis for parameterized experiment code. Aim is to learn simple BP Generator
+#Raw experiment code, written to serve as a basis for parameterized experiment code. Aim is to learn simple 3 bit Quantum Fourier Transform
 #Function as a ZX Graph
 
 from ZX_CGP import *
@@ -6,19 +6,19 @@ from ZX_CGP import *
 #Define population size
 popsize = 5
 #Define search width
-n = 5
+n = 8
 #Define search height
-m = 3
+m = 8
 #CNOT is 2 inputs
-i = 2
+i = 3
 #CNOT is 2 outputs
-o = 2
+o = 3
 #Define phase reset granularity, the degree to which a node's phase can be reset between 0 and 2pi
-k = 8
+k = 16
 #Mean mutations
-uM = 8
+uM = 20
 #Variance in mutations
-vM = 5
+vM = 20
 #Phase variance; phase is changed on average by 0.5
 p = 0.5
 #Node arity (in)
@@ -26,7 +26,7 @@ a = 2
 #Node arity (out)
 r = 4
 #Max complexity
-c = 3
+c = 4
 #Edge disconnect rate
 d = 0.1
 #Phase reset rate
@@ -68,23 +68,30 @@ checks_inputs = []
 checks_outputs = []
 bp = QSystem()
 bp.new_layer()
-bp.add_operator(QSystem.generate_qft(2))
+bp.add_operator(QSystem.generate_qft(3))
 bp.close_layer()
 bp.compile()
 for check in range(checks):
     # Get 2 random phases
     qubitA = random.random() * math.pi * 2
     qubitB = random.random() * math.pi * 2
+    qubitC = random.random() * math.pi * 2
     aZ = math.cos(qubitA) + 0j
     aO = math.sin(qubitA) + 0j
     bZ = math.cos(qubitB) + 0j
     bO = math.sin(qubitB) + 0j
-    zz = aZ * bZ
-    zo = aZ * bO
-    oz = aO * bZ
-    oo = aO * bO
+    cZ = math.cos(qubitC) + 0j
+    cO = math.sin(qubitC) + 0j
+    zzz = aZ * bZ * cZ
+    zzo = aZ * bZ * cO
+    zoz = aZ * bO * cZ
+    zoo = aZ * bO * cO
+    ozz = aO * bZ * cZ
+    ozo = aO * bZ * cO
+    ooz = aO * bO * cZ
+    ooo = aO * bO * cO
     # Build superstate of qubits
-    input = QState([zz, zo, oz, oo])
+    input = QState([zzz, zzo, zoz, zoo, ozz, ozo, ooz, ooo])
     output = bp.apply(input)
     checks_inputs.append(input)
     checks_outputs.append(output)
@@ -96,14 +103,16 @@ print("Evaluating IO Parents on ideal solution...")
 #Evaluate test set on human solution
 bp_zx = QSystem()
 bp_zx.new_layer()
-bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
-bp_zx.add_operator(ZXNode.calculate_general_green(1,1,0.0))
-bp_zx.close_layer()
-bp_zx.new_layer()
-bp_zx.add_operator((ZXNode.generate_controlled(1,ZXNode.calculate_general_green(1,1,0.5 * math.pi))))
-bp_zx.close_layer()
-bp_zx.add_operator(ZXNode.calculate_general_green(1,1,0.0))
-bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
+bp.add_operator(QSystem.generate_qft(3))
+#TODO Implement 3-bit ZX Graph as human solution
+##bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
+##bp_zx.add_operator(ZXNode.calculate_general_green(1,1,0.0))
+##bp_zx.close_layer()
+##bp_zx.new_layer()
+##bp_zx.add_operator((ZXNode.generate_controlled(1,ZXNode.calculate_general_green(1,1,0.5 * math.pi))))
+##bp_zx.close_layer()
+##bp_zx.add_operator(ZXNode.calculate_general_green(1,1,0.0))
+##bp_zx.add_operator(ZXNode.generate_hadamard_matrix())
 bp_zx.close_layer()
 bp_zx.compile()
 error = 0.0
