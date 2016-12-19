@@ -245,9 +245,10 @@ class TP_Check(Check_Builder):
                     pairings.append([min_error, p])
             totalp = 0.0
             for pair in pairings:
+                print(pair)
                 totalp += pair[1]
                 expected_error += (pair[1] * pair[0])
-                
+            print("Total probability: " + str(totalp))
             if totalp <= 0.0001:
                 expected_error = 1.0
             #Ignore insignificant error e.g. caused by python math
