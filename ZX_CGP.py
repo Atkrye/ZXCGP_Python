@@ -138,20 +138,22 @@ class ZX_CGP:
                     success = self.mutate_node(self.grid[y][x], phase_variance, phase_reset_granularity, disconnect_rate, phase_reset_rate)
 
         
-        #Mutate the grid a certain number of times using a weighted mutation distribution across [edge_change, edge_disconnect, function_change, phase_change, phase_reset]
+        #Mutate the grid a certain number of times using a weighted mutation distribution across [edge_change, edge_disconnect, function_change, phase_change, phase_reset, control flip]
         def mutate_with_weights(self, num_mutations, phase_variance, phase_reset_granularity, mutation_weights):
             self.changed = False
+            self.active_pass()
+            mutation_counters = [0 for x in range(6)]
             for mut in range(num_mutations):
                 #Once mutated, do an active pass. This is expensive and could be optimized, but relative to
                 #Quantum complexity this is arbitrary at higher numbers of qubits (max complexity)
                 self.active_pass()
-                #Keep retrying until mutation is successful
-                success = False
-                while not success:
-                    #Pick a node. Can be hidden or output, not input (which is linear)
-                    y = 1 + random.randint(0, self.n)
-                    x = random.randint(0, len(self.grid[y]) - 1)
-                    success = self.mutate_node_with_weights(self.grid[y][x], phase_variance, phase_reset_granularity, mutation_weights)
+                
+                #Pick a node. Can be hidden or output, not input (which is linear)
+                x = 1 + random.randint(0, self.n)
+                y = random.randint(0, len(self.grid[x]) - 1)
+                ret = self.mutate_node_with_weights(self.grid[x][y], phase_variance, phase_reset_granularity, mutation_weights)
+                mutation_counters[ret[1]] += 1
+            return mutation_counters
 
         #Function mutates a specific node
         def mutate_node(self, mutation_node, phase_variance, phase_reset_granularity, disconnect_rate, phase_reset_rate):
@@ -178,47 +180,58 @@ class ZX_CGP:
         def mutate_node_with_weights(self, mutation_node, phase_variance, phase_reset_granularity, mutation_weights):
             #Generate rng to sample weight distribution
             prob = random.random()
-            #Outputs can only have edge mutations, so will always act as wires (green with 0 phase). Therefore we only choose between edge mutation and edge disconnection for outputs
-            if mutation_node.get_x() == self.n + 1:
-                sum_weights = mutation_weights[0] + mutation_weights[1]
-                if prob <= (float(mutation_weights[0]) / float(sum_weights)):
-                        #Edge mutation, disconnect rate = 0.0
-                        return self.mutate_edge(mutation_node, 0.0)
-                else:
-                        #Edge deletion, disconnect rate = 1.0
-                        return self.mutate_edge(mutation_node, 1.0)
+##            #Outputs can only have edge mutations, so will always act as wires (green with 0 phase). Therefore we only choose between edge mutation and edge disconnection for outputs
+##            if mutation_node.get_x() == self.n + 1:
+##                sum_weights = mutation_weights[0] + mutation_weights[1]
+##                if prob <= (float(mutation_weights[0]) / float(sum_weights)):
+##                        #Edge mutation, disconnect rate = 0.0
+##                        return [self.mutate_edge(mutation_node, 0.0), 0]
+##                else:
+##                        #Edge deletion, disconnect rate = 1.0
+##                        return [self.mutate_edge(mutation_node, 1.0), 1]
 
             #Calculate sum of weights
             sum_weights = 0.0
             for j in range(len(mutation_weights)):
                     sum_weights += float(mutation_weights[j])
-
+            s = mutation_weights[0]
             #First is edge change
-            if prob <= float(mutation_weights[0]) / sum_weights:
+            if prob <= float(s) / sum_weights:
                     #Mutate edge
-                    return self.mutate_edge(mutation_node, 0.0)
+                    return [self.mutate_edge(mutation_node, 0.0), 0]
             #Second is edge disconnect
-            elif prob <= float(mutation_weights[1]) / sum_weights:
+            s += mutation_weights[1]
+            if prob <= float(s) / sum_weights:
                     #Disconnect edge
-                    return self.mutate_edge(mutation_node, 1.0)
+                    return [self.mutate_edge(mutation_node, 1.0), 1]
             #Third is function change
-            elif prob <= float(mutation_weights[2]) / sum_weights:
+            s += mutation_weights[2]
+            if prob <= float(s) / sum_weights:
                     #Mutate function
                     self.mutate_function(mutation_node, 0.0, phase_reset_granularity)
                     #Function mutations cannot fail and do not change the active topology of the graph so cannot affect complexity.
-                    return True
+                    return [True, 2]
             #Fourth is phase change
-            elif prob <= float(mutation_weights[3]) / sum_weights:
-                    #Mutate phase
-                    self.mutate_phase(mutation_node, phase_variance, 0.0, phase_reset_granularity)
-                    #Phase mutations cannot fail and do not change the active topology of the graph so cannot affect complexity.
-                    return True
+            s += mutation_weights[3]
+            if prob <= float(s) / sum_weights:
+                #Mutate phase
+                self.mutate_phase(mutation_node, phase_variance, 0.0, phase_reset_granularity)
+                #Phase mutations cannot fail and do not change the active topology of the graph so cannot affect complexity.
+                return [True, 3]
             #Fifth is phase reset
-            else:
+            s += mutation_weights[4]
+            if prob <= float(s) / sum_weights:
                 #Phase reset
                 self.mutate_phase(mutation_node, phase_variance, 1.0, phase_reset_granularity)
                 #Phase reset cant fail
-                return True
+                return [True, 4]
+            #Sixth is control flip
+            else:
+                self.mutate_control(mutation_node)
+                return [True, 5]
+
+        def mutate_control(self, mutation_node):
+                mutation_node.set_controlled(not mutation_node.get_controlled())
 
         #Method mutates the function of a specified node
         #Params are mutation_node, the node to mutate, and phase_reset_granularity; the degree to which phase
@@ -257,12 +270,6 @@ class ZX_CGP:
             #Otherwise, its set to rand(k) * 2pi / k e.g. 0 < phase < 2pi at some division of k
             if random.random() < phase_reset_rate and phase_reset_granularity is not -1:
                 mutation_node.set_phase(random.randint(0, int(phase_reset_granularity)) * 2.0 * math.pi / float(phase_reset_granularity))
-
-            #Decide whether the new function is controlled
-            if bool(random.getrandbits(1)):
-                mutation_node.set_controlled(True)
-            else:
-                mutation_node.set_controlled(False)
 
             #Check if we have updated the active graph
             if mutation_node.get_active():
@@ -334,27 +341,27 @@ class ZX_CGP:
             #Take over new input's relevant output slot
             new_input.set_output(output, EPointer(mutation_node.get_x(), mutation_node.get_y(), input))
 
-            #Check if the new graph has unreasonable complexity
-            if not self.check_complexity():
-                #Complexity of the new circuit is too high. The executed mutation is undone
-                #Replace the old connections
-                if old_edge_source is not None:
-                    self.get_node(old_edge_source.get_x(), old_edge_source.get_y()).set_input(old_edge_source.get_z(), EPointer(x, y, output))
-                if mutant_edge_target is not None:
-                    self.get_node(mutant_edge_target.get_x(), mutant_edge_target.get_y()).set_output(mutant_edge_target.get_z(), EPointer(mutation_node.get_x(), mutation_node.get_y(), input))
-                new_input.set_output(output, old_edge_source)
-                mutation_node.set_input(input, mutant_edge_target)
-                return False
+##            #Check if the new graph has unreasonable complexity
+##            if not self.check_complexity():
+##                #Complexity of the new circuit is too high. The executed mutation is undone
+##                #Replace the old connections
+##                if old_edge_source is not None:
+##                    self.get_node(old_edge_source.get_x(), old_edge_source.get_y()).set_input(old_edge_source.get_z(), EPointer(x, y, output))
+##                if mutant_edge_target is not None:
+##                    self.get_node(mutant_edge_target.get_x(), mutant_edge_target.get_y()).set_output(mutant_edge_target.get_z(), EPointer(mutation_node.get_x(), mutation_node.get_y(), input))
+##                new_input.set_output(output, old_edge_source)
+##                mutation_node.set_input(input, mutant_edge_target)
+##                return False
+##            else:
+            #Check if mutated node is active or if the old connection is active to check if the phenotype has changed
+            is_node_active = mutation_node.get_active()
+            if old_edge_source is not None:
+                    is_old_source_active = self.get_node(old_edge_source.get_x(), old_edge_source.get_y()).get_active()
             else:
-                #Check if mutated node is active or if the old connection is active to check if the phenotype has changed
-                is_node_active = mutation_node.get_active()
-                if old_edge_source is not None:
-                        is_old_source_active = self.get_node(old_edge_source.get_x(), old_edge_source.get_y()).get_active()
-                else:
-                        is_old_source_active = False
-                if is_node_active or is_old_source_active:
+                    is_old_source_active = False
+            if is_node_active or is_old_source_active:
                     self.changed = True
-                return True
+            return True
 
         #Method checks is a graph exceeds the required complexity by considering the number of active edges at any point in the graph
         def check_complexity(self):

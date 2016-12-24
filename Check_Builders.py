@@ -110,11 +110,11 @@ class TP_Check(Check_Builder):
 
             #Build input with 2 extra qubits in zero state
             input_state = QState((inp / z / z).get_raw_data()[0])
-
+            
             #Evaluate system on check to generate *PRE-MEASUREMENT STATE*
             inter = input_state.apply_operator(qsystem.compiled_system.get_layer(0))
-
-            #Increment error if it is 'significant', > 0.000000001.
+            inter.normalize()
+            
             #Initialize arbitrarily large
             first = None
             second = None
@@ -140,12 +140,11 @@ class TP_Check(Check_Builder):
                     real = res2[0]
                     real = real.apply_operator(qsystem.compiled_system.get_layer(2))
                     real.normalize()
-
+                    
                     #Find best case error
                     min_error = 10000.0
                     for one3 in [False, True]:
                         for one4 in [False, True]:
-                            res = None
                             if one3:
                                 first = o
                             else:
@@ -158,12 +157,12 @@ class TP_Check(Check_Builder):
                             potential_error = (real - output_state).state_data.size()
                             if potential_error < min_error:
                                 min_error = potential_error
-                    pairings.append([p, min_error])
+                    pairings.append([min_error, p])
             totalp = 0.0
             for pair in pairings:
                 totalp += pair[1]
                 expected_error += (pair[1] * pair[0])
-            if totalp < 0.00001:
+            if totalp <= 0.0001:
                 expected_error = 1.0
             #Ignore insignificant error e.g. caused by python math
             if expected_error > 0.000000001:
